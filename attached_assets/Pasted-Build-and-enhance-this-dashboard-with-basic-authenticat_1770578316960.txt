@@ -1,0 +1,240 @@
+Build and enhance this dashboard with basic authentication, role-based access, and a Field Worker workflow. This is an extension of an existing dashboard UI, not a rebuild.
+
+Tech Stack (Mandatory)
+
+Frontend: React
+
+Backend: Node.js + Express
+
+Database: MongoDB (Mongoose)
+
+Authentication: JWT (email + password only)
+
+No AI/ML implementation — simulate AI results
+
+1. Authentication & Role Setup (NEW)
+User Model
+
+Create a User schema with:
+
+_id
+
+name
+
+email (unique)
+
+password (hashed)
+
+role (FieldWorker, Supervisor, Admin, ProgramOwner)
+
+createdAt
+
+Auth APIs
+
+Implement:
+
+POST /api/auth/register
+
+Admin-only endpoint
+
+Create users with role assignment
+
+POST /api/auth/login
+
+Email + password login
+
+Returns JWT containing:
+
+userId
+
+role
+
+Auth Middleware
+
+JWT verification middleware
+
+Role-based guard:
+
+FieldWorker can access screening workflows only
+
+2. Field Worker Frontend Workflow
+After Login
+
+If role === FieldWorker, redirect to:
+/field-worker/home
+
+Field Worker Home Page
+
+Show:
+
+Welcome message
+
+Two actions:
+
+Register Patient
+
+Review Patient
+
+3. Register Patient Flow
+Frontend
+
+Open patient registration form
+
+Fields:
+
+Patient name, age, gender
+
+Guardian info
+
+Developmental questionnaire (mock fields)
+
+Submit
+
+POST data to backend
+
+After submit:
+
+Show message: “Analysis in progress…”
+
+Poll backend for status
+
+Once completed:
+
+Show “Analysis complete”
+
+Show View Results button
+
+4. AI Results Page (Simulated)
+
+Route: /field-worker/results/:assessmentId
+
+Display:
+
+Mock risk level
+
+Mock flagged domains
+
+Mock recommendations
+
+Label results as AI-assisted (non-diagnostic)
+
+5. Review Patient Flow
+Frontend
+
+Fetch patients assigned to logged-in Field Worker
+
+Show list
+
+Selecting a patient shows:
+
+Assessment history
+
+Past mock AI results
+
+6. Backend Data Models
+Patient
+
+_id
+
+name
+
+age
+
+gender
+
+assignedFieldWorker (User reference)
+
+Assessment
+
+_id
+
+patient (Patient reference)
+
+fieldWorker (User reference)
+
+questionnaireResponses
+
+aiStatus (pending, completed)
+
+aiResult (mock JSON)
+
+createdAt
+
+7. Backend APIs
+Patient
+
+POST /api/patients
+
+FieldWorker only
+
+Assign patient to logged-in user
+
+GET /api/patients/my
+
+FieldWorker only
+
+Returns assigned patients
+
+Assessment
+
+POST /api/assessments
+
+Save questionnaire
+
+Set aiStatus = pending
+
+Simulate AI processing using timeout
+
+Update aiStatus = completed with mock results
+
+GET /api/assessments/:id
+
+Return assessment + AI result
+
+8. AI Simulation (Backend)
+
+After assessment creation:
+
+Use async delay (e.g. setTimeout 3–5 seconds)
+
+Auto-update:
+
+aiStatus = completed
+
+aiResult = static mock object
+
+9. Security & Access Control
+
+JWT required for all APIs
+
+Role-based access enforced server-side
+
+Field Workers:
+
+Can access only their own patients and assessments
+
+10. Out of Scope (DO NOT BUILD)
+
+No real AI/ML models
+
+No OTP login
+
+No Supervisor or Program Owner dashboards
+
+No analytics dashboards
+
+Final Output Expectation
+
+Working login
+
+Field Worker can:
+
+Register patient
+
+Submit questionnaire
+
+See simulated AI results
+
+Review previously registered patients
+
+Clean API wiring and database persistence

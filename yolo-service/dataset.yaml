@@ -1,0 +1,16 @@
+
+path: ./datasets/ds_indicators
+train: images/train
+val: images/val
+
+nc: 8
+
+names:
+  0: epicanthal_folds
+  1: upward_slanting_eyes
+  2: flat_nasal_bridge
+  3: small_or_unusual_ears
+  4: protruding_tongue
+  5: flat_facial_profile
+  6: short_neck
+  7: brushfield_spots

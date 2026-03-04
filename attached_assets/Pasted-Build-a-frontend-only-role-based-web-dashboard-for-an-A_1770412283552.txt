@@ -1,0 +1,128 @@
+Build a frontend-only, role-based web dashboard for an AI-enabled Early Development (ECD) monitoring system.
+
+Focus on complete user flows and dashboards. Backend and AI logic must be mocked behind service interfaces so they can be replaced later without changing the UI.
+
+Tech Stack
+
+React
+
+Material UI (data-dense, professional-grade UI)
+
+Chart.js or Recharts
+
+localStorage for offline simulation
+
+Architecture Rules
+
+Single unified dashboard shell
+
+Role-based views: Field Worker, Supervisor, Program Owner, Admin
+
+All data access via /api service files (no logic in components)
+
+Async mock services (simulate network calls)
+
+App Structure
+src/
+ ├─ api/ (mock backend + AI)
+ │   ├─ riskService.js
+ │   ├─ interventionService.js
+ │   └─ outcomeService.js
+ ├─ pages/
+ │   ├─ Home.jsx
+ │   ├─ patientRegistry.jsx
+ │   ├─ ScreeningForm.jsx
+ │   ├─ patientProfile.jsx
+ │   ├─ SupervisorDashboard.jsx
+ │   ├─ ProgramDashboard.jsx
+ │   ├─ Reports.jsx
+ │   ├─ About.jsx
+ │   └─ Contacts.jsx
+ ├─ components/ (cards, tables, alerts)
+ ├─ roles/ (role-specific views)
+ ├─ store/localStore.js
+ └─ App.jsx
+
+Features
+Field Worker
+
+Register patient
+
+Fill one screening form
+
+Save data locally (offline simulation)
+
+Show mock AI risk: Low / Medium / High
+
+Supervisor
+
+View patients by risk
+
+Alerts for high-risk & missed follow-ups
+
+patient profile with screening timeline
+
+Program Owner
+
+KPIs:
+
+Total patients
+
+High-risk %
+
+Exit from high-risk %
+
+Avg. reduction in delay months
+
+Outcome trends using sample fields:
+
+reduction_in_delay_months
+
+domain_improvement
+
+autism_risk_change
+
+exit_high_risk
+
+Admin
+
+Mock user list
+
+Manual JSON upload simulation
+
+Mock AI Services
+
+riskService
+
+{ riskScore, riskLevel, priorityFlag }
+
+
+interventionService
+
+Returns text-based intervention recommendation
+
+outcomeService
+
+Computes KPIs and trends
+
+These services must be easily replaceable by real backend APIs later.
+
+UI Rules
+
+Material cards & tables
+
+High contrast, accessible
+
+No glassmorphism
+
+No neumorphism
+
+Do NOT Build
+
+Real backend
+
+Real ML models
+
+Mobile app
+
+Goal: deliver a demo-ready frontend that clearly shows screening → risk → intervention → outcomes.
