@@ -52,9 +52,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-muted/40 p-4">
+    <div className="login-bg-pattern min-h-screen w-full flex items-center justify-center p-4">
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
-        <Card className="border-2 shadow-xl">
+        <Card className="border-2 shadow-xl bg-background">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl">Welcome</CardTitle>
             <CardDescription>Sign in to continue</CardDescription>
