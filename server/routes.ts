@@ -11,7 +11,8 @@ import { generateAllInterventionPlans } from "./services/ai/interventionRecommen
 import { logAudit } from "./services/auditLogger";
 import { evaluateAlertTriggers } from "./services/alertEngine";
 import { generateDistrictReport, reportToCSV } from "./services/reportGenerator";
-import { cacheWrap, invalidateCache } from "./redis";
+import { cacheWrap, invalidateCache, pingRedis } from "./redis";
+import { pool } from "./db";
 import { predictRiskTrajectory, type ScreeningHistoryEntry } from "./services/ai/predictiveAnalyzer";
 import { adjustInterventionIntensity } from "./services/ai/dynamicRecommender";
 
@@ -49,6 +50,38 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // health check — no auth required
+  app.get("/health", async (_req, res) => {
+    let dbStatus: "connected" | "error" = "error";
+    try {
+      if (pool) {
+        await pool.query("SELECT 1");
+        dbStatus = "connected";
+      } else {
+        // in-memory storage, no DB configured
+        dbStatus = "connected";
+      }
+    } catch {
+      dbStatus = "error";
+    }
+
+    const redisStatus = await pingRedis();
+
+    const status = dbStatus === "error" ? "error"
+      : redisStatus === "error" ? "degraded"
+      : "ok";
+
+    const httpStatus = status === "error" ? 503 : 200;
+
+    res.status(httpStatus).json({
+      status,
+      db: dbStatus,
+      redis: redisStatus,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   // auth gate (login/logout/me excluded)
   app.use("/api", (req, res, next) => {

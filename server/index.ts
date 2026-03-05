@@ -6,6 +6,7 @@ import { createServer } from "http";
 import { awaitRedisReady } from "./redis";
 import helmet from "helmet";
 import cors from "cors";
+import compression from "compression";
 import rateLimit from "express-rate-limit";
 
 const isProd = process.env.NODE_ENV === "production";
@@ -21,6 +22,8 @@ declare module "http" {
 app.use(helmet({
   contentSecurityPolicy: isProd ? undefined : false, // no CSP in dev (HMR)
 }));
+
+app.use(compression());
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
@@ -99,6 +102,32 @@ app.use((req, res, next) => {
 
   next();
 });
+
+// --- Process-level error handling & graceful shutdown ---
+process.on("unhandledRejection", (reason) => {
+  console.error("[process] Unhandled promise rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[process] Uncaught exception:", err);
+  process.exit(1);
+});
+
+function gracefulShutdown(signal: string) {
+  log(`${signal} received — shutting down gracefully`, "process");
+  httpServer.close(() => {
+    log("HTTP server closed", "process");
+    process.exit(0);
+  });
+  // Force exit after 10s if connections don't close
+  setTimeout(() => {
+    console.error("[process] Forced shutdown after 10s timeout");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 (async () => {
   await awaitRedisReady();

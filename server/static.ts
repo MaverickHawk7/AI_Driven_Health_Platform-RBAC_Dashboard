@@ -10,10 +10,26 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Hashed assets (JS/CSS bundles) — cache forever
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), {
+      maxAge: "1y",
+      immutable: true,
+    })
+  );
 
-  // SPA fallback
+  // Other static files (images, fonts) — 1 day cache
+  app.use(
+    express.static(distPath, {
+      maxAge: "1d",
+      index: false, // don't serve index.html from here
+    })
+  );
+
+  // SPA fallback — no cache for HTML
   app.use("/{*path}", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

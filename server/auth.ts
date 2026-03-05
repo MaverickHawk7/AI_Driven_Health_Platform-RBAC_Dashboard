@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import session from "express-session";
@@ -26,6 +27,9 @@ export function setupAuth(app: Express) {
   if (!sessionSecret && isProd) {
     throw new Error("SESSION_SECRET environment variable is required in production.");
   }
+  if (!sessionSecret && !isProd) {
+    log("WARNING: SESSION_SECRET not set — using random secret. Sessions will not persist across restarts.", "auth");
+  }
 
   const MemoryStore = createMemoryStore(session);
   const redisStore = getSessionStore();
@@ -40,7 +44,7 @@ export function setupAuth(app: Express) {
   const SESSION_MAX_AGE = 30 * 60 * 1000; // 30 min
 
   const sessionSettings: session.SessionOptions = {
-    secret: sessionSecret || "ecd-dashboard-dev-secret",
+    secret: sessionSecret || crypto.randomUUID(),
     resave: false,
     saveUninitialized: false,
     store: redisStore ?? new MemoryStore({ checkPeriod: 86400000 }),

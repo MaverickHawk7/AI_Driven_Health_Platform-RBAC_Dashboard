@@ -1,0 +1,56 @@
+schema: spec-driven
+
+context: |
+  Domain: Early Childhood Development (ECD) screening & intervention management platform
+
+  Tech stack:
+    Frontend: React 18, TypeScript, Vite 7, Wouter (routing), TanStack React Query 5
+    UI: shadcn/ui (new-york style) + Radix UI primitives, Tailwind CSS 3, Framer Motion
+    Charts: Recharts
+    Forms: React Hook Form + Zod resolvers
+    Icons: Lucide React, React Icons
+    Theme: next-themes (dark mode), HSL CSS variables
+    Backend: Express 5, TypeScript, Node.js
+    Database: PostgreSQL + Drizzle ORM
+    Auth: Passport.js (local strategy), express-session (Redis or in-memory)
+    Security: Helmet, bcryptjs, CORS, rate limiting, PII encryption at rest
+    Caching: Redis (optional, in-memory fallback)
+    WebSockets: ws
+    Validation: Zod (shared client/server schemas)
+    AI Services: OpenRouter (LLM), Ollama (local LLM), YOLO (local vision model)
+    Build: Vite (client) + esbuild (server), tsx for dev
+
+  Architecture:
+    - Full-stack monorepo: client/, server/, shared/
+    - Shared schema (shared/schema.ts) with Drizzle table defs + Zod validation
+    - Shared route definitions (shared/routes.ts) with typed API contracts
+    - Storage interface pattern for DB access (server/storage.ts)
+    - AI services in server/services/ai/ (risk, vision, intervention, predictive, dynamic)
+    - shadcn/ui components in client/src/components/ui/
+
+  Conventions:
+    - Components: PascalCase filenames, functional components with hooks
+    - Hooks: use-*.ts(x) in client/src/hooks/
+    - Import aliases: @/* → client/src/*, @shared/* → shared/*
+    - TypeScript strict mode, no implicit any
+    - State: React Query for server state, Context for auth, useState for local
+    - API: RESTful JSON endpoints, Zod-validated request/response
+    - Error handling: try-catch + toast notifications (client), status codes (server)
+    - Role-based access: field_worker, supervisor, cdpo, dwcweo, higher_official, admin
+
+  Key patterns:
+    - ProtectedRoute wrapper with allowedRoles array
+    - useAuth() hook for auth context (login/logout/user)
+    - queryClient with staleTime: Infinity, no auto-refetch
+    - PII fields encrypted at rest, decrypted on retrieval
+    - AI analyzers with LLM-first, formula-fallback strategy
+
+rules:
+  proposal:
+    - Always consider role-based access implications
+    - Note any PII/encryption concerns for patient data
+    - Identify affected AI services if applicable
+  tasks:
+    - Reference specific files to modify (use full paths from project root)
+    - Keep tasks focused — one concern per task
+    - Include Zod schema updates when adding/changing data models

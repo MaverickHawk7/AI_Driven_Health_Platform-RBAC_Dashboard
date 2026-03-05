@@ -61,6 +61,17 @@ export async function awaitRedisReady(timeoutMs = 3000): Promise<void> {
   }
 }
 
+export async function pingRedis(): Promise<"connected" | "disabled" | "error"> {
+  if (!redisClient) return "disabled";
+  if (!isReady) return "error";
+  try {
+    await redisClient.ping();
+    return "connected";
+  } catch {
+    return "error";
+  }
+}
+
 export function getSessionStore(): RedisStore | null {
   if (!redisClient || !isReady) return null;
 
