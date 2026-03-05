@@ -29,9 +29,15 @@ import DWCWEODashboard from "@/pages/DWCWEODashboard";
 import HODashboard from "@/pages/HODashboard";
 import NotFound from "@/pages/not-found";
 
+// Stable component — stays mounted while authenticated, keeps WS alive across navigations
+function WebSocketManager() {
+  const { user } = useAuth();
+  useWebSocket(user?.id);
+  return null;
+}
+
 function ProtectedRoute({ component: Component, allowedRoles }: { component: any, allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
-  useWebSocket(user?.id);
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
@@ -140,6 +146,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <WebSocketManager />
           <TooltipProvider>
             <Toaster />
             <Router />
