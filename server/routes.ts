@@ -273,10 +273,11 @@ export async function registerRoutes(
       invalidateCache("stats", "patients:*").catch(() => {});
       res.status(201).json(patient);
     } catch (err) {
+      console.error("[patient-create] Error:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
-      throw err;
+      return res.status(500).json({ message: err instanceof Error ? err.message : "Failed to create patient" });
     }
   });
 
