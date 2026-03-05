@@ -15,6 +15,8 @@ import { cacheWrap, invalidateCache, pingRedis } from "./redis";
 import { pool } from "./db";
 import { predictRiskTrajectory, type ScreeningHistoryEntry } from "./services/ai/predictiveAnalyzer";
 import { adjustInterventionIntensity } from "./services/ai/dynamicRecommender";
+import * as fhirMapper from "./services/fhirMapper";
+import { sendToUser } from "./ws";
 
 const QUESTION_DOMAIN: Record<string, keyof DomainScores> = {
   q1: "motor",
@@ -680,17 +682,87 @@ export async function registerRoutes(
   });
 
   // === Alerts ===
+
+  // Helper: get patient IDs visible to the current user based on role scope
+  async function getRoleScopedPatientIds(user: any): Promise<number[] | null> {
+    // null = no filter (see all)
+    if (user.role === "admin" || user.role === "higher_official") return null;
+
+    const allPatients = await storage.getPatients();
+    const allCenters = await storage.getCenters();
+    const centerMap = new Map(allCenters.map(c => [c.id, c]));
+
+    if (user.role === "field_worker") {
+      // Only patients in their center
+      return allPatients.filter(p => p.centerId === user.centerId).map(p => p.id);
+    }
+
+    if (user.role === "supervisor") {
+      // Patients in centers assigned to this supervisor
+      const assignments = await storage.getSupervisorCenterAssignments();
+      const assignedCenterIds = new Set(
+        assignments.filter(a => a.supervisorId === user.id).map(a => a.centerId)
+      );
+      return allPatients.filter(p => p.centerId && assignedCenterIds.has(p.centerId)).map(p => p.id);
+    }
+
+    if (user.role === "cdpo") {
+      // Patients in centers within the CDPO's assigned block
+      const blockCenterIds = new Set(
+        allCenters.filter(c => c.block === user.assignedBlock).map(c => c.id)
+      );
+      return allPatients.filter(p => p.centerId && blockCenterIds.has(p.centerId)).map(p => p.id);
+    }
+
+    if (user.role === "dwcweo") {
+      // Patients in centers within the DWCWEO's assigned district
+      const districtCenterIds = new Set(
+        allCenters.filter(c => c.district === user.assignedDistrict).map(c => c.id)
+      );
+      return allPatients.filter(p => p.centerId && districtCenterIds.has(p.centerId)).map(p => p.id);
+    }
+
+    return null;
+  }
+
   app.get(api.alerts.list.path, async (req, res) => {
+    const user = req.user as any;
     const alertList = await storage.getAlerts({
       status: req.query.status as string | undefined,
       type: req.query.type as string | undefined,
       severity: req.query.severity as string | undefined,
       assignedToUserId: req.query.assignedTo ? Number(req.query.assignedTo) : undefined,
     });
+
+    // Role-based scoping: only show alerts for patients in the user's scope
+    const scopedPatientIds = await getRoleScopedPatientIds(user);
+    if (scopedPatientIds !== null) {
+      const idSet = new Set(scopedPatientIds);
+      const filtered = alertList.filter(a => !a.patientId || idSet.has(a.patientId));
+      return res.json(filtered);
+    }
+
     res.json(alertList);
   });
 
   app.get(api.alerts.counts.path, async (req, res) => {
+    const user = req.user as any;
+    const scopedPatientIds = await getRoleScopedPatientIds(user);
+
+    if (scopedPatientIds !== null) {
+      // Compute scoped counts instead of using cache
+      const all = await storage.getAlerts({ status: "active" });
+      const idSet = new Set(scopedPatientIds);
+      const scoped = all.filter(a => !a.patientId || idSet.has(a.patientId));
+      return res.json({
+        critical: scoped.filter(a => a.severity === "critical").length,
+        high: scoped.filter(a => a.severity === "high").length,
+        medium: scoped.filter(a => a.severity === "medium").length,
+        low: scoped.filter(a => a.severity === "low").length,
+        total: scoped.length,
+      });
+    }
+
     const counts = await cacheWrap("alerts:counts", 300, () => storage.getAlertCounts());
     res.json(counts);
   });
@@ -774,6 +846,76 @@ export async function registerRoutes(
       generateDistrictReport(from || undefined, to || undefined)
     );
     res.json(report.workerPerformance);
+  });
+
+  // === FHIR Export ===
+  const FHIR_ROLES = ["admin", "cdpo", "dwcweo", "higher_official"];
+
+  app.get(api.fhir.patients.path, async (req, res) => {
+    const user = req.user as any;
+    if (!FHIR_ROLES.includes(user.role)) {
+      return res.status(403).json({ message: "Insufficient permissions for FHIR export" });
+    }
+    const patients = await storage.getPatients();
+    const bundle = fhirMapper.toFHIRBundle(patients.map(fhirMapper.toFHIRPatient));
+    logAudit({ action: "export", resourceType: "fhir_patient", details: { count: patients.length, exportedBy: user.id } });
+    res.json(bundle);
+  });
+
+  app.get(api.fhir.observations.path, async (req, res) => {
+    const user = req.user as any;
+    if (!FHIR_ROLES.includes(user.role)) {
+      return res.status(403).json({ message: "Insufficient permissions for FHIR export" });
+    }
+    const patients = await storage.getPatients();
+    const patientUuidMap = new Map(patients.map(p => [p.id, p.uuid]));
+    const screenings = await storage.getScreenings();
+    const resources = screenings.map(s =>
+      fhirMapper.toFHIRObservation(s, patientUuidMap.get(s.patientId) || `unknown-${s.patientId}`)
+    );
+    const bundle = fhirMapper.toFHIRBundle(resources);
+    logAudit({ action: "export", resourceType: "fhir_observation", details: { count: screenings.length, exportedBy: user.id } });
+    res.json(bundle);
+  });
+
+  app.get(api.fhir.carePlans.path, async (req, res) => {
+    const user = req.user as any;
+    if (!FHIR_ROLES.includes(user.role)) {
+      return res.status(403).json({ message: "Insufficient permissions for FHIR export" });
+    }
+    const patients = await storage.getPatients();
+    const patientUuidMap = new Map(patients.map(p => [p.id, p.uuid]));
+    const plans = await storage.getInterventionPlans();
+    const resources = plans.map(p =>
+      fhirMapper.toFHIRCarePlan(p, patientUuidMap.get(p.patientId) || `unknown-${p.patientId}`)
+    );
+    const bundle = fhirMapper.toFHIRBundle(resources);
+    logAudit({ action: "export", resourceType: "fhir_careplan", details: { count: plans.length, exportedBy: user.id } });
+    res.json(bundle);
+  });
+
+  app.get(api.fhir.bundleAll.path, async (req, res) => {
+    const user = req.user as any;
+    if (!FHIR_ROLES.includes(user.role)) {
+      return res.status(403).json({ message: "Insufficient permissions for FHIR export" });
+    }
+    const patients = await storage.getPatients();
+    const patientUuidMap = new Map(patients.map(p => [p.id, p.uuid]));
+    const screenings = await storage.getScreenings();
+    const plans = await storage.getInterventionPlans();
+
+    const allResources = [
+      ...patients.map(fhirMapper.toFHIRPatient),
+      ...screenings.map(s => fhirMapper.toFHIRObservation(s, patientUuidMap.get(s.patientId) || `unknown-${s.patientId}`)),
+      ...plans.map(p => fhirMapper.toFHIRCarePlan(p, patientUuidMap.get(p.patientId) || `unknown-${p.patientId}`)),
+    ];
+    const bundle = fhirMapper.toFHIRBundle(allResources);
+    logAudit({
+      action: "export",
+      resourceType: "fhir_bundle",
+      details: { patients: patients.length, screenings: screenings.length, plans: plans.length, exportedBy: user.id },
+    });
+    res.json(bundle);
   });
 
   // === Stats ===
@@ -1006,6 +1148,13 @@ export async function registerRoutes(
         resourceId: String(msg.id),
         details: { recipientId: input.recipientId, type: input.type },
       });
+
+      // Real-time notification to recipient
+      sendToUser(input.recipientId, {
+        type: "new_message",
+        data: { messageId: msg.id, senderId: user.id, subject: msg.subject, priority: msg.priority },
+      });
+
       res.status(201).json(msg);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1038,6 +1187,13 @@ export async function registerRoutes(
           details: { completedBy: user.id },
         });
       }
+
+      // Notify sender about status change
+      sendToUser(msg.senderId, {
+        type: "message_status",
+        data: { messageId: msg.id, status: input.status },
+      });
+
       res.json(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {

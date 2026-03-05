@@ -22,6 +22,9 @@ declare global {
   }
 }
 
+// Exported for WebSocket upgrade authentication
+export let sessionMiddleware: ReturnType<typeof session>;
+
 export function setupAuth(app: Express) {
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret && isProd) {
@@ -56,7 +59,8 @@ export function setupAuth(app: Express) {
     },
   };
 
-  app.use(session(sessionSettings));
+  sessionMiddleware = session(sessionSettings);
+  app.use(sessionMiddleware);
   app.use(passport.initialize());
   app.use(passport.session());
 

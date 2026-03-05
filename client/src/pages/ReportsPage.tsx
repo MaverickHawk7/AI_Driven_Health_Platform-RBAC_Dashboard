@@ -4,15 +4,43 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, Users, TrendingUp, BarChart3 } from "lucide-react";
+import { Download, FileText, Users, TrendingUp, BarChart3, Share2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from "recharts";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import type { DistrictReport } from "@shared/schema";
 
 export default function ReportsPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [report, setReport] = useState<DistrictReport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fhirExporting, setFhirExporting] = useState<string | null>(null);
+
+  const canExportFHIR = user && ["admin", "cdpo", "dwcweo", "higher_official"].includes(user.role);
+
+  async function exportFHIR(type: "Patient" | "Observation" | "CarePlan" | "Bundle") {
+    setFhirExporting(type);
+    try {
+      const res = await fetch(`/api/fhir/${type}`);
+      if (!res.ok) throw new Error("Export failed");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/fhir+json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fhir-${type.toLowerCase()}-bundle-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Exported", description: `FHIR ${type} bundle downloaded successfully.` });
+    } catch {
+      toast({ title: "Export Failed", description: `Could not export FHIR ${type} data.`, variant: "destructive" });
+    } finally {
+      setFhirExporting(null);
+    }
+  }
 
   async function generateReport() {
     setIsLoading(true);
@@ -76,6 +104,64 @@ export default function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* FHIR Data Export */}
+      {canExportFHIR && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
+              FHIR Data Export
+            </CardTitle>
+            <CardDescription>
+              Export data in HL7 FHIR R4 format for integration with government health systems (NHM, ABDM) and external platforms.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button
+                variant="outline"
+                className="gap-2 h-auto py-3 flex-col"
+                disabled={fhirExporting !== null}
+                onClick={() => exportFHIR("Patient")}
+              >
+                <Users className="w-4 h-4" />
+                <span className="text-xs">{fhirExporting === "Patient" ? "Exporting..." : "Patients"}</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 h-auto py-3 flex-col"
+                disabled={fhirExporting !== null}
+                onClick={() => exportFHIR("Observation")}
+              >
+                <FileText className="w-4 h-4" />
+                <span className="text-xs">{fhirExporting === "Observation" ? "Exporting..." : "Screenings"}</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 h-auto py-3 flex-col"
+                disabled={fhirExporting !== null}
+                onClick={() => exportFHIR("CarePlan")}
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span className="text-xs">{fhirExporting === "CarePlan" ? "Exporting..." : "Care Plans"}</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2 h-auto py-3 flex-col border-primary/30 bg-primary/5"
+                disabled={fhirExporting !== null}
+                onClick={() => exportFHIR("Bundle")}
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-xs font-medium">{fhirExporting === "Bundle" ? "Exporting..." : "Export All"}</span>
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-3">
+              Files are exported as FHIR R4 JSON Bundles. Compatible with ABDM, OpenMRS, DHIS2, and other FHIR-compliant systems.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {report && (
         <>

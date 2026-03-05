@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupAuth } from "./auth";
+import { setupAuth, sessionMiddleware } from "./auth";
+import { setupWebSocket } from "./ws";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { awaitRedisReady } from "./redis";
@@ -133,6 +134,7 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 (async () => {
   await awaitRedisReady();
   setupAuth(app);
+  setupWebSocket(httpServer, sessionMiddleware as any);
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

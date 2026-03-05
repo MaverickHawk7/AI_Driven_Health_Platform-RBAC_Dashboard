@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useMessages, useSentMessages, useUnreadCount, useCreateMessage,
   useUpdateMessageStatus, useUsers, useAssignments,
 } from "@/hooks/use-resources";
+import { api, buildUrl } from "@shared/routes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +67,19 @@ export default function MessagesInbox() {
     dueDate: "",
     relatedPatientId: "",
   });
+
+  const queryClient = useQueryClient();
+
+  const markAsRead = useCallback(async (msgId: number) => {
+    const url = buildUrl(api.messages.update.path, { id: msgId });
+    await fetch(url, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "read" }),
+    });
+    queryClient.invalidateQueries({ queryKey: [api.messages.list.path] });
+    queryClient.invalidateQueries({ queryKey: [api.messages.unread.path] });
+  }, [queryClient]);
 
   if (!user) return null;
 
@@ -152,7 +167,12 @@ export default function MessagesInbox() {
       <div
         key={msg.id}
         className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${isSelected ? "bg-muted/70" : ""} ${msg.status === "unread" ? "bg-primary/5" : ""}`}
-        onClick={() => setSelectedMessage(msg)}
+        onClick={() => {
+          setSelectedMessage(msg);
+          if (msg.status === "unread" && msg.recipientId === user.id) {
+            markAsRead(msg.id);
+          }
+        }}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">

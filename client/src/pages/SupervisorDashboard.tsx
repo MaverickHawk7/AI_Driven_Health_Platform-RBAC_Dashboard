@@ -1,4 +1,5 @@
-import { useStats, useAlerts, useAlertCounts, useUpdateAlert, useDataQuality, useClusterDomains } from "@/hooks/use-resources";
+import { useState } from "react";
+import { useStats, useAlerts, useAlertCounts, useUpdateAlert, useDataQuality, useClusterDomains, useCenters } from "@/hooks/use-resources";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -6,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RiskBadge } from "@/components/RiskBadge";
-import { AlertCircle, AlertTriangle, ArrowRight, Activity, Users, Bell, Clock, Calendar, ShieldAlert, BarChart3, CheckSquare } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Activity, Users, Bell, Clock, Calendar, ShieldAlert, BarChart3, CheckSquare, Filter } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function SupervisorDashboard() {
@@ -19,6 +21,12 @@ export default function SupervisorDashboard() {
 
   const { data: dataQuality } = useDataQuality();
   const { data: clusterDomains } = useClusterDomains();
+  const { data: centersList } = useCenters();
+
+  // Cohort segmentation filters
+  const [ageGroupFilter, setAgeGroupFilter] = useState<string>("");
+  const [riskFilter, setRiskFilter] = useState<string>("");
+  const [centerFilter, setCenterFilter] = useState<string>("");
 
   // Single fetch for all patients and screenings
   const { data: allPatients, isLoading } = useQuery({
@@ -47,8 +55,31 @@ export default function SupervisorDashboard() {
 
   if (isLoading) return <div className="p-8">Loading dashboard...</div>;
 
+  // Apply cohort segmentation filters
+  const filteredPatients = (allPatients || []).filter((patient: any) => {
+    // Age group filter
+    if (ageGroupFilter) {
+      const age = patient.ageMonths ?? 0;
+      if (ageGroupFilter === "0-12" && age > 12) return false;
+      if (ageGroupFilter === "13-24" && (age < 13 || age > 24)) return false;
+      if (ageGroupFilter === "25-36" && (age < 25 || age > 36)) return false;
+      if (ageGroupFilter === "37+" && age < 37) return false;
+    }
+    // Center filter
+    if (centerFilter && patient.centerId !== Number(centerFilter)) return false;
+    return true;
+  });
+
+  // Risk filter applied to patients with screening data (used in priority lists)
+  const applyRiskFilter = (riskLevel: string) => {
+    if (!riskFilter) return true;
+    return riskLevel === riskFilter;
+  };
+
+  const filtersActive = !!(ageGroupFilter || riskFilter || centerFilter);
+
   // Build case prioritization data
-  const casePriority = (allPatients || []).map(patient => {
+  const casePriority = (filteredPatients).map((patient: any) => {
     const pScreenings = (allScreenings || [])
       .filter((s: any) => s.patientId === patient.id)
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -64,11 +95,11 @@ export default function SupervisorDashboard() {
     };
   })
     .filter(Boolean)
-    .filter((c: any) => c.riskLevel !== "Low")
+    .filter((c: any) => c.riskLevel !== "Low" && applyRiskFilter(c.riskLevel))
     .sort((a: any, b: any) => b.riskScore - a.riskScore || a.daysSinceScreening - b.daysSinceScreening);
 
   // Build follow-up calendar: patients with non-Low risk and no reassessment
-  const followUps = (allPatients || []).map(patient => {
+  const followUps = (filteredPatients).map((patient: any) => {
     const pScreenings = (allScreenings || [])
       .filter((s: any) => s.patientId === patient.id)
       .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -91,7 +122,7 @@ export default function SupervisorDashboard() {
   }).filter(Boolean) as any[];
 
   // High-Risk Inaction Tracker: High-risk patients with no active plan or no recent screening
-  const highRiskInaction = (allPatients || []).map(patient => {
+  const highRiskInaction = (filteredPatients).map((patient: any) => {
     const pScreenings = (allScreenings || [])
       .filter((s: any) => s.patientId === patient.id)
       .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -130,6 +161,71 @@ export default function SupervisorDashboard() {
           <Button variant="outline">View All Patients</Button>
         </Link>
       </div>
+
+      {/* Cohort Segmentation Filters */}
+      <Card>
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              Cohort Filters
+            </div>
+
+            <Select value={ageGroupFilter || "all"} onValueChange={v => setAgeGroupFilter(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[140px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Age Group" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Ages</SelectItem>
+                <SelectItem value="0-12">0–12 months</SelectItem>
+                <SelectItem value="13-24">13–24 months</SelectItem>
+                <SelectItem value="25-36">25–36 months</SelectItem>
+                <SelectItem value="37+">37+ months</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={riskFilter || "all"} onValueChange={v => setRiskFilter(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[140px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Risk Level" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Risk</SelectItem>
+                <SelectItem value="High">High Risk</SelectItem>
+                <SelectItem value="Medium">Medium Risk</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={centerFilter || "all"} onValueChange={v => setCenterFilter(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Center" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Centers</SelectItem>
+                {(centersList as any[] || []).map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {filtersActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground"
+                onClick={() => { setAgeGroupFilter(""); setRiskFilter(""); setCenterFilter(""); }}
+              >
+                Clear Filters
+              </Button>
+            )}
+
+            {filtersActive && (
+              <Badge variant="outline" className="text-xs ml-auto">
+                Showing {filteredPatients.length} of {(allPatients || []).length} patients
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

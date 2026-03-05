@@ -199,13 +199,13 @@ const VISION_MODEL_ROTATION = [
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 /** Max retries on 429 before moving to next model */
-const RATE_LIMIT_RETRIES = 1;
+const RATE_LIMIT_RETRIES = 2;
 /** Wait time in ms before retrying after a 429 */
-const RATE_LIMIT_WAIT_MS = 5_000;
-/** Max models to try before giving up (fail fast to fallback) */
-const MAX_MODELS_TO_TRY = 3;
+const RATE_LIMIT_WAIT_MS = 3_000;
+/** Max models to try before giving up (try all available) */
+const MAX_MODELS_TO_TRY = 6;
 /** Per-request timeout in ms */
-const FETCH_TIMEOUT_MS = 15_000;
+const FETCH_TIMEOUT_MS = 20_000;
 
 export interface VisionLLMCallOptions {
   model?: string;

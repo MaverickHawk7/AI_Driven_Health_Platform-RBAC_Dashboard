@@ -503,6 +503,36 @@ export const api = {
       },
     },
   },
+  fhir: {
+    patients: {
+      method: 'GET' as const,
+      path: '/api/fhir/Patient',
+      responses: {
+        200: z.custom<any>(),
+      },
+    },
+    observations: {
+      method: 'GET' as const,
+      path: '/api/fhir/Observation',
+      responses: {
+        200: z.custom<any>(),
+      },
+    },
+    carePlans: {
+      method: 'GET' as const,
+      path: '/api/fhir/CarePlan',
+      responses: {
+        200: z.custom<any>(),
+      },
+    },
+    bundleAll: {
+      method: 'GET' as const,
+      path: '/api/fhir/Bundle',
+      responses: {
+        200: z.custom<any>(),
+      },
+    },
+  },
   photoAnalysis: {
     analyze: {
       method: 'POST' as const,
