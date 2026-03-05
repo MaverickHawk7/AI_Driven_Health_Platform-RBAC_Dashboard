@@ -5,7 +5,7 @@
     "buildCommand": "npm install --include=dev && npm run build"
   },
   "deploy": {
-    "startCommand": "NODE_ENV=production node dist/index.cjs",
+    "startCommand": "npm run db:push && NODE_ENV=production node dist/index.cjs",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
