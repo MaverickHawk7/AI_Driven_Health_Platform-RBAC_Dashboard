@@ -12,6 +12,7 @@ export function setupWebSocket(httpServer: Server, sessionParser: (req: any, res
   wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (req, socket, head) => {
+    log(`Upgrade request received: ${req.url}`, "ws");
     // Only handle /ws path
     if (req.url !== "/ws") return;
 
