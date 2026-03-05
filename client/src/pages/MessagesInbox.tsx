@@ -98,17 +98,21 @@ export default function MessagesInbox() {
       return allUsers.filter((u: any) => u.id !== user.id);
     }
     if (user.role === "supervisor") {
-      const fwIds = allAssignments
+      // Assignments map supervisor → center; find field workers in those centers
+      const myCenterIds = allAssignments
         .filter((a: any) => a.supervisorId === user.id)
-        .map((a: any) => a.fieldWorkerId);
-      return allUsers.filter((u: any) => fwIds.includes(u.id));
+        .map((a: any) => a.centerId);
+      return allUsers.filter((u: any) =>
+        u.id !== user.id && u.role === "field_worker" && myCenterIds.includes(u.centerId)
+      );
     }
     if (user.role === "field_worker") {
-      const myAssignment = allAssignments.find((a: any) => a.fieldWorkerId === user.id);
-      if (myAssignment) {
-        return allUsers.filter((u: any) => u.id === myAssignment.supervisorId);
-      }
-      return [];
+      // Find supervisors assigned to my center
+      const myCenterId = (user as any).centerId;
+      const supervisorIds = allAssignments
+        .filter((a: any) => a.centerId === myCenterId)
+        .map((a: any) => a.supervisorId);
+      return allUsers.filter((u: any) => supervisorIds.includes(u.id));
     }
     return [];
   };
