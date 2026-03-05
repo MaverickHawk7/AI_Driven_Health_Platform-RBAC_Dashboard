@@ -11,6 +11,7 @@ import rateLimit from "express-rate-limit";
 
 const isProd = process.env.NODE_ENV === "production";
 const app = express();
+if (isProd) app.set("trust proxy", 1); // Trust Railway/reverse proxy for secure cookies
 const httpServer = createServer(app);
 
 declare module "http" {
