@@ -1418,10 +1418,8 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  // Seed demo data only in development
-  if (process.env.NODE_ENV !== "production") {
-    await seedDatabase();
-  }
+  // Seed demo data if database has no users
+  await seedDatabase();
 
   return httpServer;
 }
