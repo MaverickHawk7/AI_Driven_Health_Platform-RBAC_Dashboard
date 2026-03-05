@@ -12,10 +12,17 @@ export function useWebSocket(userId: number | undefined) {
 
     function connect() {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+      const url = `${protocol}//${window.location.host}/ws`;
+      console.log("[ws] Connecting to", url);
+      const ws = new WebSocket(url);
       wsRef.current = ws;
 
+      ws.onopen = () => {
+        console.log("[ws] Connected");
+      };
+
       ws.onmessage = (event) => {
+        console.log("[ws] Message received:", event.data);
         try {
           const msg = JSON.parse(event.data);
 
@@ -36,13 +43,14 @@ export function useWebSocket(userId: number | undefined) {
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (e) => {
+        console.log("[ws] Closed:", e.code, e.reason);
         wsRef.current = null;
-        // Reconnect after 3 seconds
         reconnectTimer.current = setTimeout(connect, 3000);
       };
 
-      ws.onerror = () => {
+      ws.onerror = (e) => {
+        console.error("[ws] Error:", e);
         ws.close();
       };
     }

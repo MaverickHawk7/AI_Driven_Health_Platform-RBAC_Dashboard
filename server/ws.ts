@@ -8,15 +8,22 @@ const clients = new Map<number, Set<WebSocket>>();
 
 let wss: WebSocketServer | null = null;
 
-export function setupWebSocket(httpServer: Server, sessionParser: (req: IncomingMessage, opts: any, cb: (err?: any) => void) => void) {
+export function setupWebSocket(httpServer: Server, sessionParser: (req: any, res: any, cb: (err?: any) => void) => void) {
   wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (req, socket, head) => {
     // Only handle /ws path
     if (req.url !== "/ws") return;
 
-    sessionParser(req, {} as any, (err?: any) => {
+    // express-session needs a minimal res-like object
+    const fakeRes = Object.create(null);
+    fakeRes.writeHead = () => {};
+    fakeRes.setHeader = () => {};
+    fakeRes.getHeader = () => "";
+
+    sessionParser(req, fakeRes, (err?: any) => {
       if (err) {
+        log(`WebSocket session parse error: ${err}`, "ws");
         socket.destroy();
         return;
       }
@@ -26,6 +33,7 @@ export function setupWebSocket(httpServer: Server, sessionParser: (req: Incoming
       const userId = passport?.user;
 
       if (!userId) {
+        log(`WebSocket auth failed — no userId in session`, "ws");
         socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
         socket.destroy();
         return;
