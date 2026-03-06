@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ClipboardList, ShieldCheck, Mail, Lock, MapPin, Building2, Globe } from "lucide-react";
+import {
+  User, ClipboardList, ShieldCheck, Mail, Lock, MapPin, Building2, Globe,
+  Brain, Zap, Shield, Activity, FileText, HeartPulse,
+} from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -54,10 +57,10 @@ export default function Login() {
   return (
     <div className="login-bg-pattern min-h-screen w-full flex items-center justify-center p-4">
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
-        <Card className="border-2 shadow-xl bg-background">
+        <Card className="border shadow-xl bg-background border-t-4 border-t-primary">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">Welcome</CardTitle>
-            <CardDescription>Sign in to continue</CardDescription>
+            <CardTitle className="text-2xl">Sign In</CardTitle>
+            <CardDescription>Access your dashboard</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -148,12 +151,48 @@ export default function Login() {
 
         <div className="space-y-6">
           <div>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <HeartPulse className="w-6 h-6 text-primary" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">ICDS Health Platform</span>
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground mb-3">
               Community Health <br />
               <span className="text-primary">Management System</span>
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Empowering patient health care and detection through AI-assisted monitoring and insights.
+            <p className="text-muted-foreground">
+              AI-assisted child health monitoring, risk screening, and intervention tracking for ICDS field operations.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              { icon: Brain, text: "AI-driven multi-domain risk screening" },
+              { icon: Activity, text: "Real-time alerts via WebSocket" },
+              { icon: FileText, text: "FHIR R4 health data interoperability" },
+              { icon: Shield, text: "6-tier role-based access control" },
+              { icon: Lock, text: "AES-256-GCM encrypted patient PII" },
+              { icon: Zap, text: "Predictive risk trajectory analysis" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Icon className="w-4 h-4 text-primary/70 shrink-0" />
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2">
+            {["FHIR R4", "RBAC", "WebSocket", "AES-256", "Audit Trail"].map((tag) => (
+              <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-primary/5 text-primary/70 border border-primary/10 font-medium">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="pt-2 border-t border-border/50">
+            <p className="text-xs text-muted-foreground/60">
+              Demo credentials: <span className="font-mono text-muted-foreground/80">admin</span> / <span className="font-mono text-muted-foreground/80">admin123</span>
             </p>
           </div>
         </div>
