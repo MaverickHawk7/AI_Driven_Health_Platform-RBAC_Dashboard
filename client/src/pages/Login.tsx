@@ -174,6 +174,7 @@ export default function Login() {
               { icon: Shield, text: "6-tier role-based access control" },
               { icon: Lock, text: "AES-256-GCM encrypted patient PII" },
               { icon: Zap, text: "Predictive risk trajectory analysis" },
+              { icon: ShieldCheck, text: "DPDP 2023 compliant data governance" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Icon className="w-4 h-4 text-primary/70 shrink-0" />
