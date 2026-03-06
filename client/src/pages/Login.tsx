@@ -158,11 +158,11 @@ export default function Login() {
               <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">ICDS Health Platform</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground mb-3">
-              Community Health <br />
-              <span className="text-primary">Management System</span>
+              AI-Driven Early Age <br />
+              <span className="text-primary">Health Monitoring</span>
             </h1>
             <p className="text-muted-foreground">
-              AI-assisted child health monitoring, risk screening, and intervention tracking for ICDS field operations.
+              Intelligent child health screening, risk detection, and intervention tracking for ICDS field operations.
             </p>
           </div>
 
