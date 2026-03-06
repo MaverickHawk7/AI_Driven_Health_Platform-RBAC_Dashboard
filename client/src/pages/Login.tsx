@@ -56,7 +56,7 @@ export default function Login() {
 
   return (
     <div className="login-bg-pattern min-h-screen w-full flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center">
+      <div className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center">
         <Card className="border shadow-xl bg-background border-t-4 border-t-primary">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl">Sign In</CardTitle>
@@ -158,8 +158,8 @@ export default function Login() {
               <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">ICDS Health Platform</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground mb-3">
-              AI-Driven Early Age <br />
-              <span className="text-primary">Health Monitoring</span>
+              Intelligent Early Age <br />
+              <span className="text-primary">Health Monitoring & Screening</span>
             </h1>
             <p className="text-muted-foreground">
               Intelligent child health screening, risk detection, and intervention tracking for ICDS field operations.
