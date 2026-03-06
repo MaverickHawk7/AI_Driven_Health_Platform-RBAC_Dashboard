@@ -146,6 +146,18 @@ export default function Login() {
               {loginLoading ? "Signing in..." : "Sign In"}
             </Button>
 
+            <button
+              className="w-full py-2 text-sm rounded border transition-colors"
+              style={{ backgroundColor: "var(--test-bg, #e5e7eb)" }}
+              onClick={(e) => {
+                const btn = e.currentTarget;
+                btn.style.setProperty("--test-bg", btn.style.getPropertyValue("--test-bg") === "red" ? "#e5e7eb" : "red");
+                btn.textContent = "DEPLOY WORKS!";
+              }}
+            >
+              TEST: Click me to verify deploy
+            </button>
+
             <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2.5 text-xs text-muted-foreground">
               <p className="font-medium mb-1">Demo Access</p>
               <p>Username is the role name (as shown in dropdown), password is <span className="font-mono font-medium">password</span></p>
