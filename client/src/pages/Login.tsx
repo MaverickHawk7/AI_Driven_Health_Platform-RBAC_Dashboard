@@ -183,7 +183,7 @@ export default function Login() {
           </div>
 
           <div className="flex flex-wrap gap-2 pt-2">
-            {["FHIR R4", "RBAC", "WebSocket", "AES-256", "Audit Trail"].map((tag) => (
+            {["FHIR R4", "RBAC", "WebSocket", "AES-256", "Audit Trail", "DPDP 2023"].map((tag) => (
               <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-primary/5 text-primary/70 border border-primary/10 font-medium">
                 {tag}
               </span>
