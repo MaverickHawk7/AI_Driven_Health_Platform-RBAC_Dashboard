@@ -1622,13 +1622,13 @@ async function seedDatabase() {
     });
 
     // Create Users (default password: "password")
-    const workerUser = await storage.createUser({ username: "worker", password: "password", name: "Field Worker Sarah", role: "field_worker", centerId: center1.id } as any);
-    const worker2 = await storage.createUser({ username: "worker2", password: "password", name: "Field Worker Meena", role: "field_worker", centerId: center2.id } as any);
-    const worker3 = await storage.createUser({ username: "worker3", password: "password", name: "Field Worker Anita", role: "field_worker", centerId: center3.id } as any);
+    const workerUser = await storage.createUser({ username: "field worker", password: "password", name: "Field Worker Sarah", role: "field_worker", centerId: center1.id } as any);
+    const worker2 = await storage.createUser({ username: "field worker 2", password: "password", name: "Field Worker Meena", role: "field_worker", centerId: center2.id } as any);
+    const worker3 = await storage.createUser({ username: "field worker 3", password: "password", name: "Field Worker Anita", role: "field_worker", centerId: center3.id } as any);
     const superUser = await storage.createUser({ username: "supervisor", password: "password", name: "Supervisor John", role: "supervisor" });
     await storage.createUser({ username: "cdpo", password: "password", name: "CDPO Officer Priya", role: "cdpo", assignedBlock: "Block-A" } as any);
     await storage.createUser({ username: "dwcweo", password: "password", name: "DW&CW&EO Officer Ramesh", role: "dwcweo", assignedDistrict: "District-1" } as any);
-    await storage.createUser({ username: "official", password: "password", name: "State Director Sunita", role: "higher_official" });
+    await storage.createUser({ username: "higher official", password: "password", name: "State Director Sunita", role: "higher_official" });
     const adminUser = await storage.createUser({ username: "admin", password: "password", name: "System Admin", role: "admin" });
 
     // Assign all centers to supervisor

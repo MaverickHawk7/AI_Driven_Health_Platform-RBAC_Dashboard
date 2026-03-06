@@ -148,8 +148,8 @@ export default function Login() {
 
             <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2.5 text-xs text-muted-foreground">
               <p className="font-medium mb-1">Demo Access</p>
-              <p>Username is the role name, password is <span className="font-mono font-medium">password</span></p>
-              <p className="mt-1">e.g. Username: <span className="font-mono font-medium">supervisor</span>, Password: <span className="font-mono font-medium">password</span></p>
+              <p>Username is the role name (as shown in dropdown), password is <span className="font-mono font-medium">password</span></p>
+              <p className="mt-1">e.g. Username: <span className="font-mono font-medium">field worker</span>, Password: <span className="font-mono font-medium">password</span></p>
             </div>
 
           </CardContent>
