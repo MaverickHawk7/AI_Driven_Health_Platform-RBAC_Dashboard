@@ -1583,6 +1583,16 @@ export async function registerRoutes(
 
 async function seedDatabase() {
   const allUsers = await storage.getAllUsers();
+
+  // Rename legacy seed usernames to match role display names
+  const renames: Record<string, string> = { worker: "field worker", worker2: "field worker 2", worker3: "field worker 3", official: "higher official" };
+  for (const u of allUsers) {
+    const newName = renames[u.username];
+    if (newName) {
+      await storage.renameUser(u.id, newName);
+    }
+  }
+
   if (allUsers.length === 0) {
     // Create multiple centers for the cluster
     const center1 = await storage.createCenter({

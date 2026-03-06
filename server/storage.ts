@@ -55,6 +55,7 @@ export interface IStorage {
   getAllUsers(): Promise<SafeUser[]>;
   validatePassword(username: string, password: string): Promise<SafeUser | null>;
   updateUserRole(id: number, role: string, name?: string): Promise<SafeUser>;
+  renameUser(id: number, username: string): Promise<void>;
   deleteUser(id: number): Promise<void>;
   countUsersByRole(role: string): Promise<number>;
 
@@ -179,6 +180,10 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     if (!updated) throw new Error("User not found");
     return stripPassword(updated);
+  }
+
+  async renameUser(id: number, username: string): Promise<void> {
+    await db.update(users).set({ username }).where(eq(users.id, id));
   }
 
   async deleteUser(id: number): Promise<void> {
@@ -826,6 +831,11 @@ class InMemoryStorage implements IStorage {
     user.role = role as any;
     if (name !== undefined) user.name = name;
     return stripPassword(user);
+  }
+
+  async renameUser(id: number, username: string): Promise<void> {
+    const user = this.users.find(u => u.id === id);
+    if (user) user.username = username;
   }
 
   async deleteUser(id: number): Promise<void> {
