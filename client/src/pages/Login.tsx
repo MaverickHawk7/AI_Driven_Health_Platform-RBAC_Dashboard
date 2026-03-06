@@ -197,11 +197,6 @@ export default function Login() {
             ))}
           </div>
 
-          <div className="pt-2 border-t border-border/50">
-            <p className="text-xs text-muted-foreground/60">
-              Demo credentials: <span className="font-mono text-muted-foreground/80">admin</span> / <span className="font-mono text-muted-foreground/80">admin123</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>
