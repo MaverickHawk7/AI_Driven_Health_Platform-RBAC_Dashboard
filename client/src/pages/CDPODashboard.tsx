@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, AlertTriangle, TrendingDown, Activity, ArrowRight, Grid3X3, ClipboardCheck } from "lucide-react";
-import { useScopedStats, useAlertCounts, useAlerts, useClusterDomains, useDomainHeatmap } from "@/hooks/use-resources";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, AlertTriangle, TrendingDown, Activity, ArrowRight, Grid3X3, ClipboardCheck, Filter } from "lucide-react";
+import { useScopedStats, useAlertCounts, useAlerts, useClusterDomains, useDomainHeatmap, useCenters } from "@/hooks/use-resources";
 import { Link } from "wouter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -20,6 +22,20 @@ export default function CDPODashboard() {
   const { data: regressionAlerts } = useAlerts({ type: "no_improvement", status: "active" });
   const { data: clusterDomains } = useClusterDomains();
   const { data: domainHeatmap } = useDomainHeatmap();
+  const { data: centersList } = useCenters();
+
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
+  // Derive unique blocks from centers (for display)
+  const currentBlock = centersList?.[0]?.block ?? "—";
+
+  // Filter cluster/heatmap data by selected center
+  const filteredClusterDomains = centerFilter
+    ? clusterDomains?.filter((c) => c.centerId === Number(centerFilter))
+    : clusterDomains;
+  const filteredDomainHeatmap = centerFilter
+    ? domainHeatmap?.filter((c) => c.centerId === Number(centerFilter))
+    : domainHeatmap;
 
   if (statsLoading) {
     return (
@@ -32,7 +48,7 @@ export default function CDPODashboard() {
   const totalAlerts = alertCounts ? Object.values(alertCounts).reduce((a: number, b: number) => a + (b as number), 0) : 0;
 
   // Compute intervention adherence from cluster domains data
-  const adherenceData = clusterDomains?.map((c) => ({
+  const adherenceData = filteredClusterDomains?.map((c) => ({
     centerId: c.centerId,
     centerName: c.centerName,
     screeningCount: c.screeningCount,
@@ -48,6 +64,46 @@ export default function CDPODashboard() {
         </h1>
         <p className="text-muted-foreground mt-1">CDPO — Block-level monitoring and oversight</p>
       </div>
+
+      {/* Location Filters */}
+      <Card>
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              Filters
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Block:</span>
+              <Badge variant="outline" className="text-xs font-medium">{currentBlock}</Badge>
+            </div>
+
+            <Select value={centerFilter || "all"} onValueChange={v => setCenterFilter(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Center" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Centers</SelectItem>
+                {(centersList || []).map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {centerFilter && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground"
+                onClick={() => setCenterFilter("")}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -170,7 +226,7 @@ export default function CDPODashboard() {
       )}
 
       {/* Domain Improvement Heatmap */}
-      {domainHeatmap && domainHeatmap.length > 0 ? (
+      {filteredDomainHeatmap && filteredDomainHeatmap.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -195,7 +251,7 @@ export default function CDPODashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {domainHeatmap.map((row) => (
+                  {filteredDomainHeatmap.map((row) => (
                     <tr key={row.centerId} className="border-b last:border-0">
                       <td className="py-2 font-medium">{row.centerName}</td>
                       {(["motor", "social", "language", "nutrition", "cognitive"] as const).map((domain) => {

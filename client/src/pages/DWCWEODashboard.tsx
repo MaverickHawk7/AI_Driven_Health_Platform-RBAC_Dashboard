@@ -1,8 +1,10 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, TrendingUp, AlertTriangle, BarChart3, ArrowRight } from "lucide-react";
-import { useScopedStats, useAlerts, useAlertCounts, useBlockTrends } from "@/hooks/use-resources";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, TrendingUp, AlertTriangle, BarChart3, ArrowRight, Filter } from "lucide-react";
+import { useScopedStats, useAlerts, useAlertCounts, useBlockTrends, useCenters } from "@/hooks/use-resources";
 import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
@@ -11,6 +13,29 @@ export default function DWCWEODashboard() {
   const { data: alertCounts } = useAlertCounts();
   const { data: escalatedAlerts } = useAlerts({ type: "supervisor_escalation", status: "active" });
   const { data: blockTrends } = useBlockTrends();
+  const { data: centersList } = useCenters();
+
+  const [blockFilter, setBlockFilter] = useState<string>("");
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
+  // Derive unique district (current) and blocks from centers
+  const currentDistrict = centersList?.[0]?.district ?? "—";
+  const uniqueBlocks = useMemo(() => {
+    if (!centersList) return [];
+    return Array.from(new Set(centersList.map((c: any) => c.block))).sort();
+  }, [centersList]);
+
+  // Centers filtered by selected block
+  const centersInBlock = useMemo(() => {
+    if (!centersList || !blockFilter) return centersList || [];
+    return centersList.filter((c: any) => c.block === blockFilter);
+  }, [centersList, blockFilter]);
+
+  // Reset center filter when block changes
+  const handleBlockChange = (v: string) => {
+    setBlockFilter(v === "all" ? "" : v);
+    setCenterFilter("");
+  };
 
   if (statsLoading) {
     return (
@@ -20,13 +45,18 @@ export default function DWCWEODashboard() {
     );
   }
 
+  // Filter block trends by selected block
+  const filteredBlockTrends = blockFilter
+    ? blockTrends?.filter((t) => t.block === blockFilter)
+    : blockTrends;
+
   // Transform block trends for the line chart (group by month, one line per block)
-  const months = blockTrends ? Array.from(new Set(blockTrends.map((t) => t.month))) : [];
-  const blocks = blockTrends ? Array.from(new Set(blockTrends.map((t) => t.block))) : [];
+  const months = filteredBlockTrends ? Array.from(new Set(filteredBlockTrends.map((t) => t.month))) : [];
+  const blocks = filteredBlockTrends ? Array.from(new Set(filteredBlockTrends.map((t) => t.block))) : [];
   const trendLineData = months.map((month) => {
     const entry: Record<string, any> = { month };
     for (const block of blocks) {
-      const bt = blockTrends?.find((t) => t.month === month && t.block === block);
+      const bt = filteredBlockTrends?.find((t) => t.month === month && t.block === block);
       entry[block] = bt ? Math.round((bt.high / (bt.total || 1)) * 100) : 0;
     }
     return entry;
@@ -34,7 +64,7 @@ export default function DWCWEODashboard() {
 
   // Delay distribution: per-block risk band totals
   const delayDistribution = blocks.map((block) => {
-    const blockEntries = blockTrends?.filter((t) => t.block === block) || [];
+    const blockEntries = filteredBlockTrends?.filter((t) => t.block === block) || [];
     return {
       block,
       high: blockEntries.reduce((s, t) => s + t.high, 0),
@@ -54,6 +84,58 @@ export default function DWCWEODashboard() {
         </h1>
         <p className="text-muted-foreground mt-1">DWCWEO — District-level oversight and trend analysis</p>
       </div>
+
+      {/* Location Filters */}
+      <Card>
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              Filters
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">District:</span>
+              <Badge variant="outline" className="text-xs font-medium">{currentDistrict}</Badge>
+            </div>
+
+            <Select value={blockFilter || "all"} onValueChange={handleBlockChange}>
+              <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Block" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Blocks</SelectItem>
+                {uniqueBlocks.map((b: string) => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={centerFilter || "all"} onValueChange={v => setCenterFilter(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Center" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Centers</SelectItem>
+                {centersInBlock.map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(blockFilter || centerFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground"
+                onClick={() => { setBlockFilter(""); setCenterFilter(""); }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

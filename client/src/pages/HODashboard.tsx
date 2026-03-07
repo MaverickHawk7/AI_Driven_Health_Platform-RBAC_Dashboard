@@ -1,13 +1,61 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Brain, TrendingUp, Users } from "lucide-react";
-import { useScopedStats, useAIPerformance, useDistrictComparison } from "@/hooks/use-resources";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Globe, Brain, TrendingUp, Users, Filter } from "lucide-react";
+import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters } from "@/hooks/use-resources";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter, Cell, ZAxis } from "recharts";
 
 export default function HODashboard() {
   const { data: stats, isLoading: statsLoading } = useScopedStats();
   const { data: aiPerf } = useAIPerformance();
   const { data: districtComp } = useDistrictComparison();
+  const { data: centersList } = useCenters();
+
+  const [districtFilter, setDistrictFilter] = useState<string>("");
+  const [blockFilter, setBlockFilter] = useState<string>("");
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
+  // Derive unique districts from centers
+  const uniqueDistricts = useMemo(() => {
+    if (!centersList) return [];
+    return Array.from(new Set(centersList.map((c: any) => c.district))).sort();
+  }, [centersList]);
+
+  // Blocks filtered by selected district
+  const uniqueBlocks = useMemo(() => {
+    if (!centersList) return [];
+    const filtered = districtFilter
+      ? centersList.filter((c: any) => c.district === districtFilter)
+      : centersList;
+    return Array.from(new Set(filtered.map((c: any) => c.block))).sort();
+  }, [centersList, districtFilter]);
+
+  // Centers filtered by selected block (and district)
+  const filteredCenters = useMemo(() => {
+    if (!centersList) return [];
+    let filtered = centersList;
+    if (districtFilter) filtered = filtered.filter((c: any) => c.district === districtFilter);
+    if (blockFilter) filtered = filtered.filter((c: any) => c.block === blockFilter);
+    return filtered;
+  }, [centersList, districtFilter, blockFilter]);
+
+  const handleDistrictChange = (v: string) => {
+    setDistrictFilter(v === "all" ? "" : v);
+    setBlockFilter("");
+    setCenterFilter("");
+  };
+
+  const handleBlockChange = (v: string) => {
+    setBlockFilter(v === "all" ? "" : v);
+    setCenterFilter("");
+  };
+
+  // Filter district comparison data
+  const filteredDistrictComp = districtFilter
+    ? districtComp?.filter((d) => d.district === districtFilter)
+    : districtComp;
 
   if (statsLoading) {
     return (
@@ -18,7 +66,7 @@ export default function HODashboard() {
   }
 
   // Scatter plot data: workers vs recovery rate
-  const scatterData = districtComp?.map((d) => ({
+  const scatterData = filteredDistrictComp?.map((d) => ({
     district: d.district,
     workers: d.activeWorkers,
     recoveryRate: d.recoveryRate,
@@ -36,6 +84,65 @@ export default function HODashboard() {
         </h1>
         <p className="text-muted-foreground mt-1">Higher Official — State-level program oversight and AI governance</p>
       </div>
+
+      {/* Location Filters */}
+      <Card>
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Filter className="w-4 h-4" />
+              Filters
+            </div>
+
+            <Select value={districtFilter || "all"} onValueChange={handleDistrictChange}>
+              <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                <SelectValue placeholder="District" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Districts</SelectItem>
+                {uniqueDistricts.map((d: string) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={blockFilter || "all"} onValueChange={handleBlockChange}>
+              <SelectTrigger className="w-[180px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Block" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Blocks</SelectItem>
+                {uniqueBlocks.map((b: string) => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={centerFilter || "all"} onValueChange={v => setCenterFilter(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Center" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Centers</SelectItem>
+                {filteredCenters.map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(districtFilter || blockFilter || centerFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground"
+                onClick={() => { setDistrictFilter(""); setBlockFilter(""); setCenterFilter(""); }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -118,7 +225,7 @@ export default function HODashboard() {
       </Card>
 
       {/* Policy Impact Comparison */}
-      {districtComp && districtComp.length > 0 && (
+      {filteredDistrictComp && filteredDistrictComp.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -129,7 +236,7 @@ export default function HODashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={districtComp} margin={{ bottom: 20 }}>
+              <BarChart data={filteredDistrictComp} margin={{ bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis dataKey="district" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={60} />
                 <YAxis tick={{ fontSize: 11 }} />
