@@ -94,10 +94,6 @@ export async function registerRoutes(
   });
 
   app.get(api.users.list.path, async (req, res) => {
-    const currentUser = req.user as any;
-    if (currentUser.role !== "admin") {
-      return res.status(403).json({ message: "Only admins can list all users" });
-    }
     const users = await storage.getAllUsers();
     res.json(users);
   });
