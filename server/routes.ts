@@ -266,6 +266,13 @@ export async function registerRoutes(
   app.post(api.patients.create.path, async (req, res) => {
     try {
       const input = api.patients.create.input.parse(req.body);
+      // Auto-assign centerId from the logged-in field worker's center if not provided
+      if (!input.centerId && req.user) {
+        const u = req.user as any;
+        if (u.centerId) {
+          (input as any).centerId = u.centerId;
+        }
+      }
       const patient = await storage.createPatient(input);
       logAudit({ action: "create", resourceType: "patient", resourceId: String(patient.id), details: { name: patient.name } });
       invalidateCache("stats", "patients:*").catch(() => {});
@@ -1602,7 +1609,28 @@ export async function registerRoutes(
   // Seed demo data if database has no users
   await seedDatabase();
 
+  // Backfill patients missing centerId from their registering field worker's center
+  await backfillPatientCenterIds();
+
   return httpServer;
+}
+
+async function backfillPatientCenterIds() {
+  try {
+    const allPatients = await storage.getPatients();
+    const orphaned = allPatients.filter(p => !p.centerId && p.registeredByUserId);
+    if (orphaned.length === 0) return;
+    console.log(`[backfill] Found ${orphaned.length} patients without centerId, backfilling...`);
+    for (const p of orphaned) {
+      const registrar = await storage.getUser(p.registeredByUserId!);
+      if (registrar && (registrar as any).centerId) {
+        await storage.updatePatient(p.id, { centerId: (registrar as any).centerId });
+      }
+    }
+    console.log(`[backfill] Done backfilling patient centerIds`);
+  } catch (err) {
+    console.error("[backfill] Error backfilling patient centerIds:", err);
+  }
 }
 
 async function seedDatabase() {
