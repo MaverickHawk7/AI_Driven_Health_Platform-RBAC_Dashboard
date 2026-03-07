@@ -924,6 +924,7 @@ export async function registerRoutes(
     const user = req.user as any;
     let scope: { centerIds?: number[]; block?: string; district?: string } = {};
 
+    // Base scope from user role
     if (user.role === "supervisor") {
       scope.centerIds = await storage.getCenterIdsForSupervisor(user.id);
     } else if (user.role === "cdpo") {
@@ -933,7 +934,34 @@ export async function registerRoutes(
     }
     // higher_official and admin: no scope (system-wide)
 
-    const cacheKey = `stats:scoped:${user.role}:${user.id}`;
+    // Allow narrowing via query params (cannot widen beyond role scope)
+    const qDistrict = req.query.district as string | undefined;
+    const qBlock = req.query.block as string | undefined;
+    const qCenterId = req.query.centerId as string | undefined;
+
+    if (qCenterId) {
+      const cId = Number(qCenterId);
+      // Verify center is within the user's scope
+      if (scope.centerIds) {
+        if (scope.centerIds.includes(cId)) scope.centerIds = [cId];
+      } else {
+        scope.centerIds = [cId];
+        delete scope.block;
+        delete scope.district;
+      }
+    } else if (qBlock) {
+      // Narrow to specific block (for DWCWEO/HO who see wider)
+      scope.block = qBlock;
+      delete scope.centerIds;
+      delete scope.district;
+    } else if (qDistrict) {
+      // Narrow to specific district (for HO who sees state-wide)
+      scope.district = qDistrict;
+      delete scope.centerIds;
+      delete scope.block;
+    }
+
+    const cacheKey = `stats:scoped:${user.role}:${user.id}:${qDistrict || ""}:${qBlock || ""}:${qCenterId || ""}`;
     const stats = await cacheWrap(cacheKey, 1800, () => storage.getScopedProgramStats(scope));
     res.json(stats);
   });

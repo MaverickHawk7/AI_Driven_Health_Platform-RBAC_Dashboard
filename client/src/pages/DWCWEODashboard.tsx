@@ -9,7 +9,11 @@ import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 export default function DWCWEODashboard() {
-  const { data: stats, isLoading: statsLoading } = useScopedStats();
+  const { data: stats, isLoading: statsLoading } = useScopedStats(
+    centerFilter ? { centerId: centerFilter } :
+    blockFilter ? { block: blockFilter } :
+    undefined
+  );
   const { data: alertCounts } = useAlertCounts();
   const { data: escalatedAlerts } = useAlerts({ type: "supervisor_escalation", status: "active" });
   const { data: blockTrends } = useBlockTrends();

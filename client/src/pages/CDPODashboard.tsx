@@ -17,7 +17,9 @@ function heatmapColor(value: number): string {
 }
 
 export default function CDPODashboard() {
-  const { data: stats, isLoading: statsLoading } = useScopedStats();
+  const { data: stats, isLoading: statsLoading } = useScopedStats(
+    centerFilter ? { centerId: centerFilter } : undefined
+  );
   const { data: alertCounts } = useAlertCounts();
   const { data: regressionAlerts } = useAlerts({ type: "no_improvement", status: "active" });
   const { data: clusterDomains } = useClusterDomains();

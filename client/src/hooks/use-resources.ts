@@ -792,11 +792,17 @@ export function useDeleteAssignment() {
 }
 
 
-export function useScopedStats() {
+export function useScopedStats(filters?: { district?: string; block?: string; centerId?: string }) {
   return useQuery({
-    queryKey: [api.stats.scoped.path],
+    queryKey: [api.stats.scoped.path, filters],
     queryFn: async () => {
-      const res = await fetch(api.stats.scoped.path);
+      const params = new URLSearchParams();
+      if (filters?.district) params.set("district", filters.district);
+      if (filters?.block) params.set("block", filters.block);
+      if (filters?.centerId) params.set("centerId", filters.centerId);
+      const qs = params.toString();
+      const url = qs ? `${api.stats.scoped.path}?${qs}` : api.stats.scoped.path;
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch scoped statistics");
       return res.json() as Promise<ProgramStats>;
     },

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStats, useAlerts, useAlertCounts, useUpdateAlert, useDataQuality, useClusterDomains, useCenters } from "@/hooks/use-resources";
+import { useScopedStats, useAlerts, useAlertCounts, useUpdateAlert, useDataQuality, useClusterDomains, useCenters } from "@/hooks/use-resources";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -13,7 +13,9 @@ import { AlertCircle, AlertTriangle, ArrowRight, Activity, Users, Bell, Clock, C
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function SupervisorDashboard() {
-  const { data: stats } = useStats();
+  const { data: stats } = useScopedStats(
+    centerFilter ? { centerId: centerFilter } : undefined
+  );
   const { data: activeAlerts } = useAlerts({ status: "active" });
   const { data: alertCounts } = useAlertCounts();
   const { mutate: updateAlert } = useUpdateAlert();
@@ -95,7 +97,7 @@ export default function SupervisorDashboard() {
     };
   })
     .filter(Boolean)
-    .filter((c: any) => c.riskLevel !== "Low" && applyRiskFilter(c.riskLevel))
+    .filter((c: any) => applyRiskFilter(c.riskLevel))
     .sort((a: any, b: any) => b.riskScore - a.riskScore || a.daysSinceScreening - b.daysSinceScreening);
 
   // Build follow-up calendar: patients with non-Low risk and no reassessment
@@ -192,6 +194,7 @@ export default function SupervisorDashboard() {
                 <SelectItem value="all">All Risk</SelectItem>
                 <SelectItem value="High">High Risk</SelectItem>
                 <SelectItem value="Medium">Medium Risk</SelectItem>
+                <SelectItem value="Low">Low Risk</SelectItem>
               </SelectContent>
             </Select>
 

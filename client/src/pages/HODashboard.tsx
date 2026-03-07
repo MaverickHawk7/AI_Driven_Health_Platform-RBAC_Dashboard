@@ -8,7 +8,12 @@ import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter, Cell, ZAxis } from "recharts";
 
 export default function HODashboard() {
-  const { data: stats, isLoading: statsLoading } = useScopedStats();
+  const { data: stats, isLoading: statsLoading } = useScopedStats(
+    centerFilter ? { centerId: centerFilter } :
+    blockFilter ? { block: blockFilter } :
+    districtFilter ? { district: districtFilter } :
+    undefined
+  );
   const { data: aiPerf } = useAIPerformance();
   const { data: districtComp } = useDistrictComparison();
   const { data: centersList } = useCenters();
