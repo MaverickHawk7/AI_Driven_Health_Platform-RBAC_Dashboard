@@ -27,14 +27,6 @@ const te: Record<string, string> = {
   "Predictive risk trajectory analysis": "ప్రిడిక్టివ్ రిస్క్ ట్రాజెక్టరీ విశ్లేషణ",
   "DPDP 2023 compliant data governance": "DPDP 2023 అనుగుణ డేటా గవర్నెన్స్",
 
-  // Roles
-  "Field Worker": "ఫీల్డ్ వర్కర్",
-  "Supervisor": "సూపర్‌వైజర్",
-  "CDPO": "CDPO",
-  "DW&CW&EO": "DW&CW&EO",
-  "Higher Official": "ఉన్నత అధికారి",
-  "Administrator": "అడ్మినిస్ట్రేటర్",
-
   // Sidebar nav
   "Health Screening": "ఆరోగ్య స్క్రీనింగ్",
   "My Patients": "నా పేషెంట్‌లు",
@@ -134,12 +126,6 @@ const te: Record<string, string> = {
   "Does the patient maintain eye contact during interaction?": "పేషెంట్ సంభాషణ సమయంలో కన్ను సంప్రదింపు నిర్వహిస్తారా?",
   "Can the patient communicate basic needs verbally?": "పేషెంట్ ప్రాథమిక అవసరాలను మాటల ద్వారా తెలియజేయగలరా?",
 
-  // Categories
-  "Motor": "మోటార్",
-  "Social": "సామాజిక",
-  "Nutrition": "పోషణ",
-  "Language": "భాష",
-
   // Radio options
   "Yes, consistently": "అవును, స్థిరంగా",
   "Sometimes / With help": "కొన్నిసార్లు / సహాయంతో",
@@ -159,6 +145,24 @@ const te: Record<string, string> = {
 
   // PatientsList extras
   "Manage and view all registered patients.": "అన్ని నమోదు చేసిన పేషెంట్‌లను నిర్వహించండి మరియు చూడండి.",
+  "Contact / Caregiver": "సంప్రదింపు / సంరక్షకుడు",
+  "Location": "ప్రాంతం",
+  "Action": "చర్య",
+  "Loading records...": "రికార్డ్‌లు లోడ్ అవుతున్నాయి...",
+  "No patients found matching your criteria.": "మీ ప్రమాణాలకు సరిపోయే పేషెంట్‌లు కనుగొనబడలేదు.",
+  "Not screened": "స్క్రీన్ చేయబడలేదు",
+  "Delete Patient Record": "పేషెంట్ రికార్డ్ తొలగించండి",
+  "Enter your password to confirm": "నిర్ధారించడానికి మీ పాస్‌వర్డ్ నమోదు చేయండి",
+  "Your account password": "మీ ఖాతా పాస్‌వర్డ్",
+  "Cancel": "రద్దు చేయండి",
+  "Delete Patient": "పేషెంట్‌ను తొలగించండి",
+  "Photo analysis skipped": "ఫోటో విశ్లేషణ దాటవేయబడింది",
+  "No photo analysis consent on record. Photo step has been skipped.": "ఫోటో విశ్లేషణ సమ్మతి రికార్డ్‌లో లేదు. ఫోటో దశ దాటవేయబడింది.",
+  "Screening failed": "స్క్రీనింగ్ విఫలమైంది",
+  "Active consent is required before screening. Please record consent first.": "స్క్రీనింగ్ ముందు సమ్మతి అవసరం. దయచేసి ముందుగా సమ్మతిని నమోదు చేయండి.",
+  "Patient Deleted": "పేషెంట్ తొలగించబడింది",
+  "Patient and all associated records have been removed.": "పేషెంట్ మరియు అన్ని సంబంధిత రికార్డ్‌లు తొలగించబడ్డాయి.",
+  "An unexpected error occurred.": "అనుకోని లోపం సంభవించింది.",
 };
 
 export function t(text: string, lang: Language): string {

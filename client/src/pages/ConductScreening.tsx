@@ -43,6 +43,7 @@ const STEPS = [
 ];
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
+  const { t } = useLanguage();
   return (
     <div className="flex items-center justify-center gap-1 mb-6">
       {STEPS.map((step, i) => {
@@ -57,7 +58,7 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
               "bg-muted text-muted-foreground"
             }`}>
               <Icon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{step.label}</span>
+              <span className="hidden sm:inline">{t(step.label)}</span>
             </div>
             {i < STEPS.length - 1 && (
               <div className={`w-6 h-0.5 mx-1 ${isDone ? "bg-primary/40" : "bg-muted"}`} />
@@ -155,8 +156,8 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
           setShowPhotoStep(false);
           if (selectedPatientId) {
             toast({
-              title: "Photo analysis skipped",
-              description: "No photo analysis consent on record. Photo step has been skipped.",
+              title: t("Photo analysis skipped"),
+              description: t("No photo analysis consent on record. Photo step has been skipped."),
             });
           }
         }
@@ -176,14 +177,14 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
       onError: (error: any) => {
         if (error?.code === "CONSENT_REQUIRED" || error?.message?.includes("consent")) {
           toast({
-            title: "Consent required",
-            description: "Active consent is required before screening. Please record consent first.",
+            title: t("Consent required"),
+            description: t("Active consent is required before screening. Please record consent first."),
             variant: "destructive",
           });
         } else {
           toast({
-            title: "Screening failed",
-            description: error?.message || "An unexpected error occurred.",
+            title: t("Screening failed"),
+            description: error?.message || t("An unexpected error occurred."),
             variant: "destructive",
           });
         }
@@ -371,7 +372,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                       <FormItem className="space-y-2.5">
                         <div className="flex items-center justify-between">
                           <FormLabel className="text-base font-medium">{t(question.text)}</FormLabel>
-                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-muted rounded text-muted-foreground uppercase">{t(question.category)}</span>
+                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-muted rounded text-muted-foreground uppercase">{question.category}</span>
                         </div>
                         <FormControl>
                           <RadioGroup

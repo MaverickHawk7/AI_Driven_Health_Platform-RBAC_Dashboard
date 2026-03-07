@@ -77,7 +77,7 @@ export default function PatientsList() {
 
       queryClient.invalidateQueries({ queryKey: [api.patients.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.stats.get.path] });
-      toast({ title: "Patient Deleted", description: "Patient and all associated records have been removed." });
+      toast({ title: t("Patient Deleted"), description: t("Patient and all associated records have been removed.") });
       closeDeleteDialog();
     } catch (err: any) {
       setDeleteError(err.message);
@@ -131,25 +131,25 @@ export default function PatientsList() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">Loading records...</div>
+            <div className="text-center py-8"><T>Loading records...</T></div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Patient Name</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Contact / Caregiver</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead><T>Patient Name</T></TableHead>
+                  <TableHead><T>Age</T></TableHead>
+                  <TableHead><T>Contact / Caregiver</T></TableHead>
+                  <TableHead><T>Location</T></TableHead>
                   <TableHead>Risk</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
+                  <TableHead className="text-center"><T>Action</T></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {patients?.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No patients found matching your criteria.
+                      <T>No patients found matching your criteria.</T>
                     </TableCell>
                   </TableRow>
                 )}
@@ -165,12 +165,12 @@ export default function PatientsList() {
                     <TableCell>
                       {(patient as any).latestRiskLevel
                         ? <RiskBadge level={(patient as any).latestRiskLevel} />
-                        : <span className="text-xs text-muted-foreground">Not screened</span>}
+                        : <span className="text-xs text-muted-foreground"><T>Not screened</T></span>}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Link href={`/patients/${patient.id}`}>
-                          <Button variant="ghost" size="sm">View</Button>
+                          <Button variant="ghost" size="sm"><T>View</T></Button>
                         </Link>
                         {canDelete && (
                           <Button
@@ -196,7 +196,7 @@ export default function PatientsList() {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) closeDeleteDialog(); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Patient Record</DialogTitle>
+            <DialogTitle><T>Delete Patient Record</T></DialogTitle>
             <DialogDescription>
               This will permanently delete <strong>{deleteTarget?.name}</strong> and all associated records
               (screenings, interventions, consent records, alerts). This action cannot be undone.
@@ -204,11 +204,11 @@ export default function PatientsList() {
           </DialogHeader>
 
           <div className="space-y-3 py-2">
-            <Label htmlFor="confirm-password">Enter your password to confirm</Label>
+            <Label htmlFor="confirm-password"><T>Enter your password to confirm</T></Label>
             <Input
               id="confirm-password"
               type="password"
-              placeholder="Your account password"
+              placeholder={t("Your account password")}
               value={confirmPassword}
               onChange={(e) => { setConfirmPassword(e.target.value); setDeleteError(""); }}
               onKeyDown={(e) => { if (e.key === "Enter" && confirmPassword) handleDelete(); }}
@@ -221,7 +221,7 @@ export default function PatientsList() {
 
           <DialogFooter>
             <Button variant="outline" onClick={closeDeleteDialog} disabled={deleteLoading}>
-              Cancel
+              <T>Cancel</T>
             </Button>
             <Button
               variant="destructive"
@@ -229,7 +229,7 @@ export default function PatientsList() {
               disabled={!confirmPassword || deleteLoading}
             >
               {deleteLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Delete Patient
+              <T>Delete Patient</T>
             </Button>
           </DialogFooter>
         </DialogContent>

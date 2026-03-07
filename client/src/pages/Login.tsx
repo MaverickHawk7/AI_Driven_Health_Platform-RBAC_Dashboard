@@ -90,37 +90,37 @@ export default function Login() {
                   <SelectItem value="field_worker">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="w-4 h-4 text-blue-600" />
-                      <span>{t("Field Worker")}</span>
+                      <span>Field Worker</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="supervisor">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-amber-600" />
-                      <span>{t("Supervisor")}</span>
+                      <span>Supervisor</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="cdpo">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-teal-600" />
-                      <span>{t("CDPO")}</span>
+                      <span>CDPO</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="dwcweo">
                     <div className="flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-indigo-600" />
-                      <span>{t("DW&CW&EO")}</span>
+                      <span>DW&CW&EO</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="higher_official">
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4 text-violet-600" />
-                      <span>{t("Higher Official")}</span>
+                      <span>Higher Official</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="admin">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-gray-600" />
-                      <span>{t("Administrator")}</span>
+                      <span>Administrator</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
