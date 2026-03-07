@@ -940,6 +940,7 @@ export async function registerRoutes(
       scope.district = user.assignedDistrict;
     }
     // higher_official and admin: no scope (system-wide)
+    console.log(`[scoped-stats] user=${user.id} role=${user.role} scope=${JSON.stringify(scope)}`);
 
     // Allow narrowing via query params (cannot widen beyond role scope)
     const qDistrict = req.query.district as string | undefined;
@@ -1611,6 +1612,9 @@ export async function registerRoutes(
 
   // Backfill patients missing centerId from their registering field worker's center
   await backfillPatientCenterIds();
+
+  // Clear all cached stats so fresh data is served after seed/backfill
+  invalidateCache("stats", "patients:*").catch(() => {});
 
   return httpServer;
 }
