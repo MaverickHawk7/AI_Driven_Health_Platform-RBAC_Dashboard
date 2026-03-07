@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2 } from "lucide-react";
+import { T, useLanguage } from "@/hooks/use-language";
 
 const formSchema = insertPatientSchema.extend({
   ageMonths: z.coerce.number().min(1, "Age in months is required (must be at least 1)").max(72, "Age must be 72 months or less"),
@@ -34,6 +35,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function RegisterPatient() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { mutate, isPending } = useCreatePatient();
   const [, setLocation] = useLocation();
   const [analysisComplete, setAnalysisComplete] = useState(false);
@@ -73,15 +75,15 @@ export default function RegisterPatient() {
             <CheckCircle2 className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Patient Registered Successfully</h2>
-            <p className="text-muted-foreground">The basic patient record has been created.</p>
+            <h2 className="text-2xl font-bold"><T>Patient Registered Successfully</T></h2>
+            <p className="text-muted-foreground"><T>The basic patient record has been created.</T></p>
           </div>
           <div className="flex gap-4">
             <Button variant="outline" onClick={() => setLocation("/field-worker/home")}>
-              Back to Home
+              <T>Back to Home</T>
             </Button>
             <Button onClick={() => setIsConductingScreening(true)}>
-              Proceed to Questionnaire
+              <T>Proceed to Questionnaire</T>
             </Button>
           </div>
         </div>
@@ -93,17 +95,17 @@ export default function RegisterPatient() {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Register New Patient</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground"><T>Register New Patient</T></h1>
         <p className="text-muted-foreground mt-2">
-          Create a new patient record to begin tracking and screening.
+          <T>Create a new patient record to begin tracking and screening.</T>
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Patient Details</CardTitle>
+          <CardTitle><T>Patient Details</T></CardTitle>
           <CardDescription>
-            Enter the basic information for the patient and their emergency contact.
+            <T>Enter the basic information for the patient and their emergency contact.</T>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,7 +113,7 @@ export default function RegisterPatient() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Patient Information</h3>
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider"><T>Patient Information</T></h3>
                 <Separator />
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -120,7 +122,7 @@ export default function RegisterPatient() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Patient's Full Name</FormLabel>
+                        <FormLabel><T>Patient's Full Name</T></FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. John Doe" {...field} />
                         </FormControl>
@@ -134,7 +136,7 @@ export default function RegisterPatient() {
                     name="ageMonths"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Age (Months)</FormLabel>
+                        <FormLabel><T>Age (Months)</T></FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="e.g. 12" {...field} />
                         </FormControl>
@@ -146,7 +148,7 @@ export default function RegisterPatient() {
               </div>
 
               <div className="space-y-4 pt-4">
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Emergency Contact & Caregiver</h3>
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider"><T>Emergency Contact & Caregiver</T></h3>
                 <Separator />
 
                 <FormField
@@ -154,7 +156,7 @@ export default function RegisterPatient() {
                   name="caregiverName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Primary Contact / Caregiver Name</FormLabel>
+                      <FormLabel><T>Primary Contact / Caregiver Name</T></FormLabel>
                       <FormControl>
                         <Input placeholder="e.g. Jane Doe" {...field} />
                       </FormControl>
@@ -169,7 +171,7 @@ export default function RegisterPatient() {
                     name="contactNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contact Number</FormLabel>
+                        <FormLabel><T>Contact Number</T></FormLabel>
                         <FormControl>
                           <Input placeholder="+1 234 567 8900" {...field} value={field.value || ''} />
                         </FormControl>
@@ -183,7 +185,7 @@ export default function RegisterPatient() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Address / Village</FormLabel>
+                        <FormLabel><T>Address / Village</T></FormLabel>
                         <FormControl>
                           <Input placeholder="Village, District" {...field} value={field.value || ''} />
                         </FormControl>
@@ -196,10 +198,10 @@ export default function RegisterPatient() {
 
               <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="outline" onClick={() => form.reset()}>
-                  Reset
+                  <T>Reset</T>
                 </Button>
                 <Button type="submit" disabled={isPending} className="min-w-[150px]">
-                  {isPending ? "Registering..." : "Register & Continue"}
+                  {isPending ? t("Registering...") : t("Register & Continue")}
                 </Button>
               </div>
             </form>

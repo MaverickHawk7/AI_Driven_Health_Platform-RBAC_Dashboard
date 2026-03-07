@@ -33,6 +33,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, AlertTriangle, AlertCircle, Camera, ClipboardList, FileCheck } from "lucide-react";
+import { T, useLanguage } from "@/hooks/use-language";
 
 const STEPS = [
   { label: "Patient & Consent", icon: FileCheck },
@@ -88,6 +89,7 @@ interface ConductScreeningProps {
 
 export default function ConductScreening({ patientId: propPatientId }: ConductScreeningProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { mutate, isPending } = useCreateScreening();
   const { mutate: generatePlans } = useGenerateInterventionPlan();
   const [, setLocation] = useLocation();
@@ -253,9 +255,9 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
     <div className="max-w-2xl mx-auto py-6 px-4">
       <StepIndicator currentStep={selectedPatientId && hasConsent ? 1 : 0} />
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Health Screening</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground"><T>Health Screening</T></h1>
         <p className="text-muted-foreground mt-2">
-          Assessment for early detection of health conditions and risk factors.
+          <T>Assessment for early detection of health conditions and risk factors.</T>
         </p>
       </div>
 
@@ -263,7 +265,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Select Patient</CardTitle>
+              <CardTitle><T>Select Patient</T></CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -271,7 +273,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                 name="patientId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Patient Name</FormLabel>
+                    <FormLabel><T>Patient Name</T></FormLabel>
                     <Select
                       onValueChange={(val) => {
                         field.onChange(val);
@@ -282,7 +284,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                     >
                       <FormControl>
                         <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Select a patient..." />
+                          <SelectValue placeholder={t("Select a patient...")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background">
@@ -303,14 +305,14 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                   {hasConsent ? (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Consent on file</span>
+                      <span><T>Consent on file</T></span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
                       <div className="flex-1">
-                        <p className="font-medium">Consent required</p>
-                        <p className="text-xs mt-0.5 text-red-600">Consent must be recorded before screening can proceed.</p>
+                        <p className="font-medium"><T>Consent required</T></p>
+                        <p className="text-xs mt-0.5 text-red-600"><T>Consent must be recorded before screening can proceed.</T></p>
                       </div>
                       <Button
                         type="button"
@@ -318,7 +320,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                         className="ml-auto text-xs h-8"
                         onClick={() => setShowConsent(true)}
                       >
-                        Record Consent
+                        <T>Record Consent</T>
                       </Button>
                     </>
                   )}
@@ -330,7 +332,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                 name="screeningType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Screening Type</FormLabel>
+                    <FormLabel><T>Screening Type</T></FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value || "baseline"}>
                       <FormControl>
                         <SelectTrigger className="bg-background">
@@ -338,10 +340,10 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background">
-                        <SelectItem value="baseline">Baseline Assessment</SelectItem>
-                        <SelectItem value="reassessment_3m">3-Month Reassessment</SelectItem>
-                        <SelectItem value="reassessment_6m">6-Month Reassessment</SelectItem>
-                        <SelectItem value="ad_hoc">Ad-hoc Screening</SelectItem>
+                        <SelectItem value="baseline"><T>Baseline Assessment</T></SelectItem>
+                        <SelectItem value="reassessment_3m"><T>3-Month Reassessment</T></SelectItem>
+                        <SelectItem value="reassessment_6m"><T>6-Month Reassessment</T></SelectItem>
+                        <SelectItem value="ad_hoc"><T>Ad-hoc Screening</T></SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -353,8 +355,8 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
 
           <Card>
             <CardHeader>
-              <CardTitle>Assessment Questions</CardTitle>
-              <CardDescription>Answer all questions based on observation and patient or caregiver report.</CardDescription>
+              <CardTitle><T>Assessment Questions</T></CardTitle>
+              <CardDescription><T>Answer all questions based on observation and patient or caregiver report.</T></CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               {QUESTIONS.map((question, index) => (
@@ -368,8 +370,8 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                     render={({ field }) => (
                       <FormItem className="space-y-2.5">
                         <div className="flex items-center justify-between">
-                          <FormLabel className="text-base font-medium">{question.text}</FormLabel>
-                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-muted rounded text-muted-foreground uppercase">{question.category}</span>
+                          <FormLabel className="text-base font-medium">{t(question.text)}</FormLabel>
+                          <span className="text-xs font-semibold px-1.5 py-0.5 bg-muted rounded text-muted-foreground uppercase">{t(question.category)}</span>
                         </div>
                         <FormControl>
                           <RadioGroup
@@ -381,19 +383,19 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                               <FormControl>
                                 <RadioGroupItem value="yes" />
                               </FormControl>
-                              <FormLabel className="font-normal">Yes, consistently</FormLabel>
+                              <FormLabel className="font-normal"><T>Yes, consistently</T></FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-2.5 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value="sometimes" />
                               </FormControl>
-                              <FormLabel className="font-normal">Sometimes / With help</FormLabel>
+                              <FormLabel className="font-normal"><T>Sometimes / With help</T></FormLabel>
                             </FormItem>
                             <FormItem className="flex items-center space-x-2.5 space-y-0">
                               <FormControl>
                                 <RadioGroupItem value="no" />
                               </FormControl>
-                              <FormLabel className="font-normal">No, not yet</FormLabel>
+                              <FormLabel className="font-normal"><T>No, not yet</T></FormLabel>
                             </FormItem>
                           </RadioGroup>
                         </FormControl>
@@ -408,7 +410,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
 
           <div className="flex justify-end">
             <Button size="default" type="submit" disabled={isPending || !hasConsent} className="min-w-[180px]">
-              {isPending ? "Analyzing..." : "Submit Assessment"}
+              {isPending ? t("Analyzing...") : t("Submit Assessment")}
             </Button>
           </div>
         </form>

@@ -43,14 +43,14 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!loginRole || !loginUsername || !loginPassword) {
-      toast({ title: t("common.missingFields"), description: t("common.fillFields"), variant: "destructive" });
+      toast({ title: t("Missing fields"), description: t("Please select a role and enter your credentials."), variant: "destructive" });
       return;
     }
     setLoginLoading(true);
     try {
       await login(loginUsername, loginPassword);
     } catch (err: any) {
-      toast({ title: t("common.loginFailed"), description: err.message || t("common.invalidCredentials"), variant: "destructive" });
+      toast({ title: t("Login failed"), description: err.message || t("Invalid credentials."), variant: "destructive" });
     } finally {
       setLoginLoading(false);
     }
@@ -75,52 +75,52 @@ export default function Login() {
       <div className="w-full max-w-5xl grid md:grid-cols-2 gap-16 items-center">
         <Card className="border shadow-xl bg-background border-t-4 border-t-primary">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl">{t("login.signIn")}</CardTitle>
-            <CardDescription>{t("login.accessDashboard")}</CardDescription>
+            <CardTitle className="text-2xl">{t("Sign In")}</CardTitle>
+            <CardDescription>{t("Access your dashboard")}</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="login-role">{t("login.selectRole")}</Label>
+              <Label htmlFor="login-role">{t("Select Role")}</Label>
               <Select onValueChange={(v) => setLoginRole(v as Role)} value={loginRole}>
                 <SelectTrigger id="login-role" className="h-11 bg-background">
-                  <SelectValue placeholder={t("login.selectYourRole")} />
+                  <SelectValue placeholder={t("Select your role")} />
                 </SelectTrigger>
                 <SelectContent className="bg-background">
                   <SelectItem value="field_worker">
                     <div className="flex items-center gap-2">
                       <ClipboardList className="w-4 h-4 text-blue-600" />
-                      <span>{t("role.field_worker")}</span>
+                      <span>{t("Field Worker")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="supervisor">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-amber-600" />
-                      <span>{t("role.supervisor")}</span>
+                      <span>{t("Supervisor")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="cdpo">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-teal-600" />
-                      <span>{t("role.cdpo")}</span>
+                      <span>{t("CDPO")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="dwcweo">
                     <div className="flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-indigo-600" />
-                      <span>{t("role.dwcweo")}</span>
+                      <span>{t("DW&CW&EO")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="higher_official">
                     <div className="flex items-center gap-2">
                       <Globe className="w-4 h-4 text-violet-600" />
-                      <span>{t("role.higher_official")}</span>
+                      <span>{t("Higher Official")}</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="admin">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-gray-600" />
-                      <span>{t("role.admin")}</span>
+                      <span>{t("Administrator")}</span>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -128,12 +128,12 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="login-username">{t("login.username")}</Label>
+              <Label htmlFor="login-username">{t("Username")}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="login-username"
-                  placeholder={t("login.enterUsername")}
+                  placeholder={t("Enter username")}
                   className="pl-10 h-11"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
@@ -143,13 +143,13 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="login-password">{t("login.password")}</Label>
+              <Label htmlFor="login-password">{t("Password")}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="login-password"
                   type="password"
-                  placeholder={t("login.enterPassword")}
+                  placeholder={t("Enter password")}
                   className="pl-10 h-11"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
@@ -159,14 +159,14 @@ export default function Login() {
             </div>
 
             <Button className="w-full h-11 text-base" onClick={handleLogin} disabled={loginLoading}>
-              {loginLoading ? t("login.signingIn") : t("login.signIn")}
+              {loginLoading ? t("Signing in...") : t("Sign In")}
             </Button>
 
 
             <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2.5 text-xs text-muted-foreground">
-              <p className="font-medium mb-1">{t("login.demoAccess")}</p>
-              <p>{t("login.demoHint")} <span className="font-mono font-medium">password</span></p>
-              <p className="mt-1">{t("login.demoExample")} <span className="font-mono font-medium">field worker</span>, Password: <span className="font-mono font-medium">password</span></p>
+              <p className="font-medium mb-1">{t("Demo Access")}</p>
+              <p>Username is the role name (as shown in dropdown), password is <span className="font-mono font-medium">password</span></p>
+              <p className="mt-1">e.g. Username: <span className="font-mono font-medium">field worker</span>, Password: <span className="font-mono font-medium">password</span></p>
             </div>
 
           </CardContent>
@@ -181,27 +181,27 @@ export default function Login() {
               <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">ICDS Health Platform</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground mb-3">
-              {t("login.title1")} <br />
-              <span className="text-primary">{t("login.title2")}</span>
+              {t("Intelligent Early Age")} <br />
+              <span className="text-primary">{t("Health Monitoring & Screening")}</span>
             </h1>
             <p className="text-muted-foreground">
-              {t("login.subtitle")}
+              {t("Intelligent child health screening, risk detection, and intervention tracking for ICDS field operations.")}
             </p>
           </div>
 
           <div className="space-y-3">
             {[
-              { icon: Brain, key: "feature.aiScreening" as const },
-              { icon: Activity, key: "feature.realTimeAlerts" as const },
-              { icon: FileText, key: "feature.fhir" as const },
-              { icon: Shield, key: "feature.rbac" as const },
-              { icon: Lock, key: "feature.encryption" as const },
-              { icon: Zap, key: "feature.predictive" as const },
-              { icon: ShieldCheck, key: "feature.dpdp" as const },
-            ].map(({ icon: Icon, key }) => (
-              <div key={key} className="flex items-center gap-3 text-sm text-muted-foreground">
+              { icon: Brain, text: "AI-driven multi-domain risk screening" },
+              { icon: Activity, text: "Real-time alerts via WebSocket" },
+              { icon: FileText, text: "FHIR R4 health data interoperability" },
+              { icon: Shield, text: "6-tier role-based access control" },
+              { icon: Lock, text: "AES-256-GCM encrypted patient PII" },
+              { icon: Zap, text: "Predictive risk trajectory analysis" },
+              { icon: ShieldCheck, text: "DPDP 2023 compliant data governance" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Icon className="w-4 h-4 text-primary/70 shrink-0" />
-                <span>{t(key)}</span>
+                <span>{t(text)}</span>
               </div>
             ))}
           </div>

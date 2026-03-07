@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { t, type Language, type TranslationKey } from "@/i18n/translations";
+import { t as translate, type Language } from "@/i18n/translations";
 
 interface LanguageContextValue {
   lang: Language;
   setLang: (lang: Language) => void;
   toggleLang: () => void;
-  t: (key: TranslationKey) => string;
+  t: (text: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -30,10 +30,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLang(lang === "en" ? "te" : "en");
   }, [lang, setLang]);
 
-  const translate = useCallback((key: TranslationKey) => t(key, lang), [lang]);
+  const t = useCallback((text: string) => translate(text, lang), [lang]);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t: translate }}>
+    <LanguageContext.Provider value={{ lang, setLang, toggleLang, t }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -43,4 +43,10 @@ export function useLanguage() {
   const ctx = useContext(LanguageContext);
   if (!ctx) throw new Error("useLanguage must be used within LanguageProvider");
   return ctx;
+}
+
+/** Wrapper component: <T>English text</T> auto-translates */
+export function T({ children }: { children: string }) {
+  const { t } = useLanguage();
+  return <>{t(children)}</>;
 }

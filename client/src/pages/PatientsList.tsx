@@ -16,12 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { Search, Filter, Plus, Trash2, Loader2 } from "lucide-react";
+import { T, useLanguage } from "@/hooks/use-language";
 
 export default function PatientsList() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState<"Low" | "Medium" | "High" | "All">("All");
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const canDelete = user?.role === "admin" || user?.role === "cdpo" || user?.role === "higher_official";
@@ -88,13 +90,13 @@ export default function PatientsList() {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Patients Registry</h1>
-          <p className="text-muted-foreground">Manage and view all registered patients.</p>
+          <h1 className="text-3xl font-bold tracking-tight"><T>Patient Registry</T></h1>
+          <p className="text-muted-foreground"><T>Manage and view all registered patients.</T></p>
         </div>
         <Link href="/patients/new">
           <Button className="gap-2">
             <Plus className="w-4 h-4" />
-            Register Patient
+            <T>Register Patient</T>
           </Button>
         </Link>
       </div>
@@ -105,7 +107,7 @@ export default function PatientsList() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name..."
+                placeholder={t("Search patients by name...")}
                 className="pl-8"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -115,7 +117,7 @@ export default function PatientsList() {
               <Select value={riskFilter} onValueChange={(v: any) => setRiskFilter(v)}>
                 <SelectTrigger>
                   <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Filter by Risk" />
+                  <SelectValue placeholder={t("Filter by Risk")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Risks</SelectItem>
