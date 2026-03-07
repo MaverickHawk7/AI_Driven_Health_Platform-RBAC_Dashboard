@@ -163,6 +163,20 @@ const te: Record<string, string> = {
   "Patient Deleted": "పేషెంట్ తొలగించబడింది",
   "Patient and all associated records have been removed.": "పేషెంట్ మరియు అన్ని సంబంధిత రికార్డ్‌లు తొలగించబడ్డాయి.",
   "An unexpected error occurred.": "అనుకోని లోపం సంభవించింది.",
+
+  // Theme
+  "Dark Mode": "డార్క్ మోడ్",
+  "Light Mode": "లైట్ మోడ్",
+
+  // FieldWorkerHome stats
+  "Patients": "పేషెంట్‌లు",
+  "Screenings": "స్క్రీనింగ్‌లు",
+  "Unread Messages": "చదవని సందేశాలు",
+  "Recent Patients": "ఇటీవలి పేషెంట్‌లు",
+
+  // Empty states
+  "Try adjusting your search or filters.": "మీ శోధన లేదా ఫిల్టర్‌లను సర్దుబాటు చేయడానికి ప్రయత్నించండి.",
+  "Register your first patient to get started.": "ప్రారంభించడానికి మీ మొదటి పేషెంట్‌ను నమోదు చేయండి.",
 };
 
 export function t(text: string, lang: Language): string {

@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { useWebSocket } from "@/hooks/use-websocket";
 import { LanguageProvider } from "@/hooks/use-language";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { WifiOff } from "lucide-react";
@@ -57,7 +58,7 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: any
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
         <Component />
       </main>
     </div>
@@ -164,6 +165,7 @@ function OfflineBanner() {
 function App() {
   return (
     <ErrorBoundary>
+      <ThemeProvider>
       <LanguageProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
@@ -176,6 +178,7 @@ function App() {
           </AuthProvider>
         </QueryClientProvider>
       </LanguageProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

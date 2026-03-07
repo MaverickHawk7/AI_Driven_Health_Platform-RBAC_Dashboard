@@ -15,8 +15,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import { Search, Filter, Plus, Trash2, Loader2 } from "lucide-react";
+import { Search, Filter, Plus, Trash2, Loader2, UserPlus } from "lucide-react";
 import { T, useLanguage } from "@/hooks/use-language";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PatientsList() {
   const [search, setSearch] = useState("");
@@ -131,7 +132,19 @@ export default function PatientsList() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8"><T>Loading records...</T></div>
+            <div className="space-y-3 py-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-12" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-10" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-5 w-14 rounded-full" />
+                  <Skeleton className="h-8 w-14 ml-auto" />
+                </div>
+              ))}
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -148,8 +161,21 @@ export default function PatientsList() {
               <TableBody>
                 {patients?.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      <T>No patients found matching your criteria.</T>
+                    <TableCell colSpan={7} className="py-12">
+                      <div className="flex flex-col items-center gap-3 text-center">
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                          <UserPlus className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground"><T>No patients found matching your criteria.</T></p>
+                          <p className="text-sm text-muted-foreground mt-1">{debouncedSearch || riskFilter !== "All" ? t("Try adjusting your search or filters.") : t("Register your first patient to get started.")}</p>
+                        </div>
+                        {!debouncedSearch && riskFilter === "All" && (
+                          <Link href="/patients/new">
+                            <Button size="sm" className="mt-1 gap-1.5"><Plus className="w-3.5 h-3.5" /><T>Register Patient</T></Button>
+                          </Link>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
