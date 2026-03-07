@@ -6,6 +6,7 @@ logs/
 server/public
 vite.config.ts.*
 *.tar.gz
+PUSHER.md
 
 # YOLO service artifacts (trained models, training runs, datasets)
 yolo-service/models/*.pt

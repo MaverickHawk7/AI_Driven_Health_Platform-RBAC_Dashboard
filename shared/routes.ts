@@ -43,6 +43,7 @@ export const api = {
       input: z.object({
         role: z.enum(["field_worker", "supervisor", "cdpo", "dwcweo", "higher_official", "admin"]),
         name: z.string().optional(),
+        centerId: z.number().nullable().optional(),
       }),
       responses: {
         200: z.custom<typeof users.$inferSelect>(),

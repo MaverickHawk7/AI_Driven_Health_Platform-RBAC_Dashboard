@@ -550,12 +550,15 @@ export function useUpdateUserRole() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, role, name }: { id: number; role: string; name?: string }) => {
+    mutationFn: async ({ id, role, name, centerId }: { id: number; role: string; name?: string; centerId?: number | null }) => {
       const url = buildUrl(api.users.update.path, { id });
+      const body: Record<string, any> = { role };
+      if (name !== undefined) body.name = name;
+      if (centerId !== undefined) body.centerId = centerId;
       const res = await fetch(url, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, name }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({ message: "Failed to update user" }));

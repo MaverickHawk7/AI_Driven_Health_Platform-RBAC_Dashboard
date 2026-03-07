@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return res.json();
     },
     retry: false,
-    staleTime: Infinity,
+    staleTime: 0, // always revalidate session on mount
   });
 
   const loginMutation = useMutation({

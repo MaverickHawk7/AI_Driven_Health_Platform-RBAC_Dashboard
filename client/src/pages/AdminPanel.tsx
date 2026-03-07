@@ -36,8 +36,11 @@ export default function AdminPanel() {
   const [userRoleFilter, setUserRoleFilter] = useState<string>("all");
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [isAssignFWOpen, setIsAssignFWOpen] = useState(false);
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>("");
   const [selectedCenterId, setSelectedCenterId] = useState<string>("");
+  const [selectedFWId, setSelectedFWId] = useState<string>("");
+  const [selectedFWCenterId, setSelectedFWCenterId] = useState<string>("");
   const [expandedSupervisors, setExpandedSupervisors] = useState<Set<number>>(new Set());
 
   // Group assignments by supervisor for the Assignments tab
@@ -350,14 +353,129 @@ export default function AdminPanel() {
         {/* ── Assignments Tab ── */}
         <TabsContent value="assignments" className="space-y-4 mt-4">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-muted-foreground">Assign centers to supervisors. Field workers in those centers are automatically supervised.</p>
-            <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2" onClick={() => { setSelectedSupervisorId(""); setSelectedCenterId(""); }}>
-                  <Building2 className="w-4 h-4" />
-                  Assign Center
-                </Button>
-              </DialogTrigger>
+            <p className="text-sm text-muted-foreground">Assign centers to supervisors and field workers to centers.</p>
+            <div className="flex gap-2">
+              {/* Assign Field Worker to Center dialog */}
+              <Dialog open={isAssignFWOpen} onOpenChange={setIsAssignFWOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2" onClick={() => { setSelectedFWId(""); setSelectedFWCenterId(""); }}>
+                    <Users className="w-4 h-4" />
+                    Assign Field Worker
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Assign Field Worker to Center</DialogTitle>
+                    <DialogDescription>Select a field worker and assign them to an Anganwadi center. They will automatically fall under the supervisor of that center.</DialogDescription>
+                  </DialogHeader>
+                  {(() => {
+                    const fieldWorkers = (users || []).filter((u: any) => u.role === "field_worker");
+                    const noFW = fieldWorkers.length === 0;
+                    const noCenters = !centers || (centers as any[]).length === 0;
+                    return (
+                      <>
+                        {(noFW || noCenters) && (
+                          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                            <span>
+                              {noFW && noCenters
+                                ? "No field workers or centers found. Create them first."
+                                : noFW
+                                ? "No field workers found. Create one in the Users tab first."
+                                : "No centers found in the system."}
+                            </span>
+                          </div>
+                        )}
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Field Worker</Label>
+                            <Select value={selectedFWId} onValueChange={setSelectedFWId}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="Select field worker..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background">
+                                {fieldWorkers.map((u: any) => {
+                                  const currentCenter = u.centerId ? (centers as any[])?.find((c: any) => c.id === u.centerId) : null;
+                                  return (
+                                    <SelectItem key={u.id} value={String(u.id)}>
+                                      {u.name}{currentCenter ? ` (${currentCenter.name})` : " (Unassigned)"}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Center</Label>
+                            <Select value={selectedFWCenterId} onValueChange={setSelectedFWCenterId} disabled={!selectedFWId}>
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder={selectedFWId ? "Select center..." : "Select a field worker first"} />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background">
+                                {(centers as any[] || []).map((c: any) => {
+                                  const supervisor = (assignments as any[])?.find((a: any) => a.centerId === c.id);
+                                  const supUser = supervisor ? (users as any[])?.find((u: any) => u.id === supervisor.supervisorId) : null;
+                                  return (
+                                    <SelectItem key={c.id} value={String(c.id)}>
+                                      {c.name} — {c.block}{supUser ? ` (Sup: ${supUser.name})` : ""}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {selectedFWCenterId && (() => {
+                            const supervisor = (assignments as any[])?.find((a: any) => a.centerId === Number(selectedFWCenterId));
+                            const supUser = supervisor ? (users as any[])?.find((u: any) => u.id === supervisor.supervisorId) : null;
+                            if (!supUser) return null;
+                            return (
+                              <div className="rounded-md border bg-muted/50 p-3 space-y-1">
+                                <p className="text-xs font-medium text-muted-foreground">Auto-assigned supervisor:</p>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <div className="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-[10px] font-medium">
+                                    {supUser.name.split(' ').map((n: string) => n[0]).join('')}
+                                  </div>
+                                  <span>{supUser.name}</span>
+                                  <Badge variant="outline" className="text-[10px] h-4 bg-amber-50 text-amber-700 border-amber-200">Supervisor</Badge>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            disabled={!selectedFWId || !selectedFWCenterId || isUpdatingRole}
+                            onClick={() => {
+                              const fw = (users as any[])?.find((u: any) => u.id === Number(selectedFWId));
+                              if (!fw) return;
+                              updateUserRole(
+                                { id: Number(selectedFWId), role: fw.role, centerId: Number(selectedFWCenterId) },
+                                {
+                                  onSuccess: () => {
+                                    setIsAssignFWOpen(false);
+                                    toast({ title: "Field Worker Assigned", description: "Field worker has been assigned to the center." });
+                                  },
+                                }
+                              );
+                            }}
+                          >
+                            {isUpdatingRole ? "Assigning..." : "Assign to Center"}
+                          </Button>
+                        </DialogFooter>
+                      </>
+                    );
+                  })()}
+                </DialogContent>
+              </Dialog>
+
+              {/* Assign Center to Supervisor dialog */}
+              <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2" onClick={() => { setSelectedSupervisorId(""); setSelectedCenterId(""); }}>
+                    <Building2 className="w-4 h-4" />
+                    Assign Center
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Assign Center to Supervisor</DialogTitle>
@@ -454,6 +572,7 @@ export default function AdminPanel() {
                 })()}
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {supervisorGroups.length === 0 ? (

@@ -163,12 +163,12 @@ export async function registerRoutes(
         }
       }
 
-      const updated = await storage.updateUserRole(userId, input.role, input.name);
+      const updated = await storage.updateUserRole(userId, input.role, input.name, input.centerId);
       logAudit({
         action: "update",
         resourceType: "user",
         resourceId: String(userId),
-        details: { role: input.role, previousRole: existingUser.role },
+        details: { role: input.role, previousRole: existingUser.role, centerId: input.centerId },
       });
       res.json(updated);
     } catch (err) {

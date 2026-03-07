@@ -204,4 +204,5 @@ export async function analyzeScreening(
   }
 
   // 3. Deterministic rule-based fallback
+  return fallbackRiskCalculation(SCREENING_QUESTIONS, answers);
 }
