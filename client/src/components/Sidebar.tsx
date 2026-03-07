@@ -368,7 +368,7 @@ export function Sidebar() {
           <Menu className="w-5 h-5" />
         </button>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-72 bg-sidebar">
+          <SheetContent side="left" className="p-0 w-72 !bg-background border-r">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <SidebarContent onNavigate={() => setMobileOpen(false)} />
           </SheetContent>
