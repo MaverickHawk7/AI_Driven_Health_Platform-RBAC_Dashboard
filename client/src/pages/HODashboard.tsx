@@ -8,6 +8,10 @@ import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters } f
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter, Cell, ZAxis } from "recharts";
 
 export default function HODashboard() {
+  const [districtFilter, setDistrictFilter] = useState<string>("");
+  const [blockFilter, setBlockFilter] = useState<string>("");
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
   const { data: stats, isLoading: statsLoading } = useScopedStats(
     centerFilter ? { centerId: centerFilter } :
     blockFilter ? { block: blockFilter } :
@@ -17,10 +21,6 @@ export default function HODashboard() {
   const { data: aiPerf } = useAIPerformance();
   const { data: districtComp } = useDistrictComparison();
   const { data: centersList } = useCenters();
-
-  const [districtFilter, setDistrictFilter] = useState<string>("");
-  const [blockFilter, setBlockFilter] = useState<string>("");
-  const [centerFilter, setCenterFilter] = useState<string>("");
 
   // Derive unique districts from centers
   const uniqueDistricts = useMemo(() => {

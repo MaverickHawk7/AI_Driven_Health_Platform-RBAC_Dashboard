@@ -9,6 +9,9 @@ import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 
 export default function DWCWEODashboard() {
+  const [blockFilter, setBlockFilter] = useState<string>("");
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
   const { data: stats, isLoading: statsLoading } = useScopedStats(
     centerFilter ? { centerId: centerFilter } :
     blockFilter ? { block: blockFilter } :
@@ -18,9 +21,6 @@ export default function DWCWEODashboard() {
   const { data: escalatedAlerts } = useAlerts({ type: "supervisor_escalation", status: "active" });
   const { data: blockTrends } = useBlockTrends();
   const { data: centersList } = useCenters();
-
-  const [blockFilter, setBlockFilter] = useState<string>("");
-  const [centerFilter, setCenterFilter] = useState<string>("");
 
   // Derive unique district (current) and blocks from centers
   const currentDistrict = centersList?.[0]?.district ?? "—";

@@ -17,6 +17,8 @@ function heatmapColor(value: number): string {
 }
 
 export default function CDPODashboard() {
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
   const { data: stats, isLoading: statsLoading } = useScopedStats(
     centerFilter ? { centerId: centerFilter } : undefined
   );
@@ -25,8 +27,6 @@ export default function CDPODashboard() {
   const { data: clusterDomains } = useClusterDomains();
   const { data: domainHeatmap } = useDomainHeatmap();
   const { data: centersList } = useCenters();
-
-  const [centerFilter, setCenterFilter] = useState<string>("");
 
   // Derive unique blocks from centers (for display)
   const currentBlock = centersList?.[0]?.block ?? "—";

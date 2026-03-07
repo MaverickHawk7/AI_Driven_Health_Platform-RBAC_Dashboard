@@ -13,6 +13,11 @@ import { AlertCircle, AlertTriangle, ArrowRight, Activity, Users, Bell, Clock, C
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function SupervisorDashboard() {
+  // Cohort segmentation filters
+  const [ageGroupFilter, setAgeGroupFilter] = useState<string>("");
+  const [riskFilter, setRiskFilter] = useState<string>("");
+  const [centerFilter, setCenterFilter] = useState<string>("");
+
   const { data: stats } = useScopedStats(
     centerFilter ? { centerId: centerFilter } : undefined
   );
@@ -24,11 +29,6 @@ export default function SupervisorDashboard() {
   const { data: dataQuality } = useDataQuality();
   const { data: clusterDomains } = useClusterDomains();
   const { data: centersList } = useCenters();
-
-  // Cohort segmentation filters
-  const [ageGroupFilter, setAgeGroupFilter] = useState<string>("");
-  const [riskFilter, setRiskFilter] = useState<string>("");
-  const [centerFilter, setCenterFilter] = useState<string>("");
 
   // Single fetch for all patients and screenings
   const { data: allPatients, isLoading } = useQuery({
