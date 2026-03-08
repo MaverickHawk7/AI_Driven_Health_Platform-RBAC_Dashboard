@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, TrendingUp, AlertTriangle, BarChart3, ArrowRight, Filter } from "lucide-react";
+import { MapPin, TrendingUp, AlertTriangle, BarChart3, ArrowRight, Filter, Building2 } from "lucide-react";
 import { useScopedStats, useAlerts, useAlertCounts, useBlockTrends, useCenters } from "@/hooks/use-resources";
 import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
+import CDPODashboard from "./CDPODashboard";
 
 export default function DWCWEODashboard() {
+  const [view, setView] = useState<"district" | "block">("district");
   const [blockFilter, setBlockFilter] = useState<string>("");
   const [centerFilter, setCenterFilter] = useState<string>("");
 
@@ -79,14 +81,67 @@ export default function DWCWEODashboard() {
 
   const lineColors = ["#6366f1", "#f59e0b", "#22c55e", "#ef4444", "#06b6d4", "#8b5cf6"];
 
+  if (view === "block") {
+    return (
+      <div>
+        <div className="p-6 pb-0 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <MapPin className="w-6 h-6" />
+                Overview
+              </h1>
+              <p className="text-muted-foreground mt-1">DWCWEO — District-level oversight and trend analysis</p>
+            </div>
+            <div className="flex rounded-lg border overflow-hidden">
+              <button
+                onClick={() => setView("district")}
+                className="px-4 py-2 text-sm font-medium flex items-center gap-1.5 bg-muted/30 text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                District
+              </button>
+              <button
+                onClick={() => setView("block")}
+                className="px-4 py-2 text-sm font-medium flex items-center gap-1.5 bg-primary text-primary-foreground"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                Block
+              </button>
+            </div>
+          </div>
+        </div>
+        <CDPODashboard />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <MapPin className="w-6 h-6" />
-          District Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-1">DWCWEO — District-level oversight and trend analysis</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <MapPin className="w-6 h-6" />
+            Overview
+          </h1>
+          <p className="text-muted-foreground mt-1">DWCWEO — District-level oversight and trend analysis</p>
+        </div>
+        <div className="flex rounded-lg border overflow-hidden">
+          <button
+            onClick={() => setView("district")}
+            className="px-4 py-2 text-sm font-medium flex items-center gap-1.5 bg-primary text-primary-foreground"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            District
+          </button>
+          <button
+            onClick={() => setView("block")}
+            className="px-4 py-2 text-sm font-medium flex items-center gap-1.5 bg-muted/30 text-muted-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            Block
+          </button>
+        </div>
       </div>
 
       {/* Location Filters */}

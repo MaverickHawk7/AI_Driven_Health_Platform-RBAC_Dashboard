@@ -16,7 +16,7 @@ import {
   Building2,
   MapPin,
   Globe,
-  Layers,
+
   Languages,
   Menu,
   Moon,
@@ -72,8 +72,7 @@ const NAV_ITEMS = [
   {
     role: ["dwcweo"],
     items: [
-      { href: "/dwcweo-dashboard", label: "District Dashboard", icon: MapPin },
-      { href: "/cdpo-dashboard", label: "Block Overview", icon: Layers },
+      { href: "/dwcweo-dashboard", label: "Overview", icon: MapPin },
       { href: "/patients", label: "Patient Registry", icon: Users },
       { href: "/messages", label: "Messages", icon: MessageSquare },
       { href: "/alerts", label: "Alerts", icon: Bell },
