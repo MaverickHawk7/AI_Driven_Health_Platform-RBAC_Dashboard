@@ -121,7 +121,7 @@ export default function HODashboard() {
             {viewToggle}
           </div>
         </div>
-        <DWCWEODashboard />
+        <DWCWEODashboard embedded />
       </div>
     );
   }
@@ -141,7 +141,7 @@ export default function HODashboard() {
             {viewToggle}
           </div>
         </div>
-        <CDPODashboard />
+        <CDPODashboard embedded />
       </div>
     );
   }
@@ -152,7 +152,7 @@ export default function HODashboard() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Globe className="w-6 h-6" />
-            Overview
+            State Governance Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">Higher Official — State-level program oversight and AI governance</p>
         </div>

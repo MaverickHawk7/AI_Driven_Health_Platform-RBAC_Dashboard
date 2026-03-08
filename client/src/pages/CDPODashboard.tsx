@@ -17,7 +17,7 @@ function heatmapColor(value: number): string {
   return "bg-red-200 text-red-800";
 }
 
-export default function CDPODashboard() {
+export default function CDPODashboard({ embedded }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const assignedBlock = (user as any)?.assignedBlock || "";
   const [selectedBlock, setSelectedBlock] = useState<string>(assignedBlock);
@@ -69,13 +69,15 @@ export default function CDPODashboard() {
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Building2 className="w-6 h-6" />
-          Block Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-1">CDPO — Block-level monitoring and oversight</p>
-      </div>
+      {!embedded && (
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Building2 className="w-6 h-6" />
+            Block Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">CDPO — Block-level monitoring and oversight</p>
+        </div>
+      )}
 
       {/* Location Filters */}
       <Card>
