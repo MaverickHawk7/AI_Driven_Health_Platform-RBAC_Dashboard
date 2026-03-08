@@ -3,12 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Globe, Brain, TrendingUp, Users, Filter } from "lucide-react";
+import { Globe, Brain, TrendingUp, Users, Filter, MapPin, Building2 } from "lucide-react";
 import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters } from "@/hooks/use-resources";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter, Cell, ZAxis } from "recharts";
 import { DISTRICTS } from "@shared/constants";
+import DWCWEODashboard from "./DWCWEODashboard";
+import CDPODashboard from "./CDPODashboard";
 
 export default function HODashboard() {
+  const [view, setView] = useState<"state" | "district" | "block">("state");
   const [districtFilter, setDistrictFilter] = useState<string>("");
   const [blockFilter, setBlockFilter] = useState<string>("");
   const [centerFilter, setCenterFilter] = useState<string>("");
@@ -77,14 +80,83 @@ export default function HODashboard() {
 
   const scatterColors = ["#6366f1", "#f59e0b", "#22c55e", "#ef4444", "#06b6d4", "#8b5cf6", "#ec4899", "#14b8a6"];
 
+  const viewToggle = (
+    <div className="flex rounded-lg border overflow-hidden">
+      <button
+        onClick={() => setView("state")}
+        className={`px-4 py-2 text-sm font-medium flex items-center gap-1.5 ${view === "state" ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground hover:bg-muted/50 transition-colors"}`}
+      >
+        <Globe className="w-3.5 h-3.5" />
+        State
+      </button>
+      <button
+        onClick={() => setView("district")}
+        className={`px-4 py-2 text-sm font-medium flex items-center gap-1.5 ${view === "district" ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground hover:bg-muted/50 transition-colors"}`}
+      >
+        <MapPin className="w-3.5 h-3.5" />
+        District
+      </button>
+      <button
+        onClick={() => setView("block")}
+        className={`px-4 py-2 text-sm font-medium flex items-center gap-1.5 ${view === "block" ? "bg-primary text-primary-foreground" : "bg-muted/30 text-muted-foreground hover:bg-muted/50 transition-colors"}`}
+      >
+        <Building2 className="w-3.5 h-3.5" />
+        Block
+      </button>
+    </div>
+  );
+
+  if (view === "district") {
+    return (
+      <div>
+        <div className="p-6 pb-0 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Globe className="w-6 h-6" />
+                State Governance Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">Higher Official — State-level program oversight and AI governance</p>
+            </div>
+            {viewToggle}
+          </div>
+        </div>
+        <DWCWEODashboard />
+      </div>
+    );
+  }
+
+  if (view === "block") {
+    return (
+      <div>
+        <div className="p-6 pb-0 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Globe className="w-6 h-6" />
+                State Governance Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">Higher Official — State-level program oversight and AI governance</p>
+            </div>
+            {viewToggle}
+          </div>
+        </div>
+        <CDPODashboard />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Globe className="w-6 h-6" />
-          State Governance Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-1">Higher Official — State-level program oversight and AI governance</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Globe className="w-6 h-6" />
+            Overview
+          </h1>
+          <p className="text-muted-foreground mt-1">Higher Official — State-level program oversight and AI governance</p>
+        </div>
+        {viewToggle}
       </div>
 
       {/* Location Filters */}

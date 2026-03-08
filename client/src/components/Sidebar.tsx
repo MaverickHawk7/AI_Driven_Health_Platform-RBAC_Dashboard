@@ -83,7 +83,6 @@ const NAV_ITEMS = [
     role: ["higher_official"],
     items: [
       { href: "/ho-dashboard", label: "State Dashboard", icon: Globe },
-      { href: "/dwcweo-dashboard", label: "District Overview", icon: MapPin },
       { href: "/patients", label: "Patient Registry", icon: Users },
       { href: "/messages", label: "Messages", icon: MessageSquare },
       { href: "/alerts", label: "Alerts", icon: Bell },
