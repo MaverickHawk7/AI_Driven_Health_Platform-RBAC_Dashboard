@@ -61,7 +61,6 @@ export default function InterventionPlanView() {
       patientId,
       activityTitle,
       status: "completed",
-      completedAt: new Date().toISOString(),
       completedByUserId: user?.id,
     });
   }

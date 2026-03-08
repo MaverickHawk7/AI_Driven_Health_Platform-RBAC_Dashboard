@@ -40,6 +40,7 @@ const NAV_ITEMS = [
   {
     role: ["field_worker"],
     items: [
+      { href: "/field-worker/home", label: "Overview", icon: Activity },
       { href: "/screenings/new", label: "Health Screening", icon: ClipboardList },
       { href: "/patients", label: "My Patients", icon: Users },
       { href: "/patients/new", label: "Register Patient", icon: UserPlus },

@@ -659,10 +659,17 @@ export async function registerRoutes(
 
   app.post(api.activityLogs.create.path, async (req, res) => {
     try {
-      const input = api.activityLogs.create.input.parse(req.body);
+      // Remove completedAt from body to avoid string-vs-Date Zod mismatch
+      const { completedAt, ...rest } = req.body;
+      const input = api.activityLogs.create.input.parse(rest);
+      // Auto-set completedAt on the server when status is completed
+      if (input.status === "completed") {
+        (input as any).completedAt = new Date();
+      }
       const log = await storage.createActivityLog(input);
       res.status(201).json(log);
     } catch (err) {
+      console.error("[activity-log-create] Error:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }

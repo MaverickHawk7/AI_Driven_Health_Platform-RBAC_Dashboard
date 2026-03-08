@@ -289,6 +289,7 @@ export function useActivityLogs(interventionPlanId?: number, patientId?: number)
 
 export function useCreateActivityLog() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: any) => {
@@ -297,11 +298,18 @@ export function useCreateActivityLog() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to create activity log");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to mark activity" }));
+        throw new Error(err.message || "Failed to mark activity");
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.activityLogs.list.path] });
+      toast({ title: "Activity Completed", description: "Activity marked as done." });
+    },
+    onError: (err) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
 }
