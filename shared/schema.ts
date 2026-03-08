@@ -32,11 +32,14 @@ export const users = pgTable("users", {
 export const patients = pgTable("patients", {
   id: serial("id").primaryKey(),
   uuid: text("uuid").notNull().unique().$defaultFn(() => crypto.randomUUID()),
+  patientIdNumber: text("patient_id_number"),
   name: text("name").notNull(),
   ageMonths: integer("age_months").notNull(),
   caregiverName: text("caregiver_name").notNull(),
   contactNumber: text("contact_number"),
   address: text("address"),
+  district: text("district"),
+  block: text("block"),
   centerId: integer("center_id").references(() => centers.id),
   registeredByUserId: integer("registered_by_user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -393,13 +396,22 @@ export type CreatePatientRequest = InsertPatient;
 export type CreateScreeningRequest = InsertScreening;
 export type UpdateInterventionRequest = Partial<InsertIntervention>;
 
-// Domain scores type
+// Domain scores type (supports both legacy and M-CHAT-R/F domains)
 export interface DomainScores {
-  motor: number;
-  social: number;
-  language: number;
-  nutrition: number;
-  cognitive: number;
+  // Legacy domains (existing screenings)
+  motor?: number;
+  social?: number;
+  language?: number;
+  nutrition?: number;
+  cognitive?: number;
+  // M-CHAT-R/F behavioral domains (new screenings)
+  communication?: number;
+  socialInteraction?: number;
+  jointAttention?: number;
+  playBehavior?: number;
+  repetitiveBehavior?: number;
+  sensorySensitivity?: number;
+  emotionalRegulation?: number;
 }
 
 // Longitudinal progress type

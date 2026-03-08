@@ -18,34 +18,90 @@ import { adjustInterventionIntensity } from "./services/ai/dynamicRecommender";
 import * as fhirMapper from "./services/fhirMapper";
 import { sendToUser } from "./ws";
 
-const QUESTION_DOMAIN: Record<string, keyof DomainScores> = {
-  q1: "motor",
-  q2: "social",
-  q3: "nutrition",
-  q4: "social",
-  q5: "language",
+// M-CHAT-R/F domain mapping for new two-tier questions
+// "reversed" means "yes" is concerning (negative behavior questions)
+const MCHAT_QUESTIONS: Array<{ id: string; domain: keyof DomainScores; reversed: boolean }> = [
+  // Tier 1
+  { id: "t1_q1",  domain: "communication",      reversed: false },
+  { id: "t1_q2",  domain: "communication",      reversed: false },
+  { id: "t1_q3",  domain: "communication",      reversed: false },
+  { id: "t1_q4",  domain: "jointAttention",     reversed: false },
+  { id: "t1_q5",  domain: "socialInteraction",  reversed: false },
+  { id: "t1_q6",  domain: "socialInteraction",  reversed: false },
+  { id: "t1_q7",  domain: "jointAttention",     reversed: false },
+  { id: "t1_q8",  domain: "jointAttention",     reversed: false },
+  { id: "t1_q9",  domain: "communication",      reversed: false },
+  { id: "t1_q10", domain: "playBehavior",       reversed: false },
+  { id: "t1_q11", domain: "socialInteraction",  reversed: false },
+  { id: "t1_q12", domain: "jointAttention",     reversed: false },
+  { id: "t1_q13", domain: "repetitiveBehavior", reversed: true },
+  { id: "t1_q14", domain: "repetitiveBehavior", reversed: true },
+  { id: "t1_q15", domain: "sensorySensitivity", reversed: true },
+  // Tier 2
+  { id: "t2_q1",  domain: "repetitiveBehavior",  reversed: true },
+  { id: "t2_q2",  domain: "communication",       reversed: true },
+  { id: "t2_q3",  domain: "socialInteraction",   reversed: true },
+  { id: "t2_q4",  domain: "socialInteraction",   reversed: true },
+  { id: "t2_q5",  domain: "socialInteraction",   reversed: true },
+  { id: "t2_q6",  domain: "repetitiveBehavior",  reversed: true },
+  { id: "t2_q7",  domain: "repetitiveBehavior",  reversed: true },
+  { id: "t2_q8",  domain: "sensorySensitivity",  reversed: true },
+  { id: "t2_q9",  domain: "sensorySensitivity",  reversed: true },
+  { id: "t2_q10", domain: "emotionalRegulation", reversed: true },
+  { id: "t2_q11", domain: "emotionalRegulation", reversed: true },
+  { id: "t2_q12", domain: "repetitiveBehavior",  reversed: true },
+];
+
+// Legacy domain mapping for old q1-q5 screenings
+const LEGACY_QUESTION_DOMAIN: Record<string, string> = {
+  q1: "motor", q2: "social", q3: "nutrition", q4: "social", q5: "language",
 };
 
 function computeDomainScores(answers: Record<string, string>): DomainScores {
-  const domainValues: Record<string, number[]> = {};
+  // Detect if this is a new M-CHAT-R/F screening or legacy
+  const isNewFormat = Object.keys(answers).some(k => k.startsWith("t1_") || k.startsWith("t2_"));
 
-  for (const [qId, answer] of Object.entries(answers)) {
-    const domain = QUESTION_DOMAIN[qId];
-    if (!domain) continue;
-    const score = answer === "no" ? 100 : answer === "sometimes" ? 40 : 0;
-    if (!domainValues[domain]) domainValues[domain] = [];
-    domainValues[domain].push(score);
+  if (!isNewFormat) {
+    // Legacy scoring for old q1-q5 format
+    const domainValues: Record<string, number[]> = {};
+    for (const [qId, answer] of Object.entries(answers)) {
+      const domain = LEGACY_QUESTION_DOMAIN[qId];
+      if (!domain) continue;
+      const score = answer === "no" ? 100 : answer === "sometimes" ? 40 : 0;
+      if (!domainValues[domain]) domainValues[domain] = [];
+      domainValues[domain].push(score);
+    }
+    const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length) : 0;
+    const motor = avg(domainValues.motor || []);
+    const social = avg(domainValues.social || []);
+    const language = avg(domainValues.language || []);
+    const nutrition = avg(domainValues.nutrition || []);
+    const cognitive = Math.round((motor + social + language + nutrition) / 4);
+    return { motor, social, language, nutrition, cognitive };
+  }
+
+  // New M-CHAT-R/F domain scoring
+  const domainValues: Record<string, number[]> = {};
+  for (const q of MCHAT_QUESTIONS) {
+    const answer = answers[q.id];
+    if (!answer) continue;
+    const concerning = q.reversed ? (answer === "yes") : (answer === "no");
+    const score = concerning ? 100 : 0;
+    if (!domainValues[q.domain]) domainValues[q.domain] = [];
+    domainValues[q.domain].push(score);
   }
 
   const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length) : 0;
 
-  const motor = avg(domainValues.motor || []);
-  const social = avg(domainValues.social || []);
-  const language = avg(domainValues.language || []);
-  const nutrition = avg(domainValues.nutrition || []);
-  const cognitive = Math.round((motor + social + language + nutrition) / 4);
-
-  return { motor, social, language, nutrition, cognitive };
+  return {
+    communication:       avg(domainValues.communication || []),
+    socialInteraction:   avg(domainValues.socialInteraction || []),
+    jointAttention:      avg(domainValues.jointAttention || []),
+    playBehavior:        avg(domainValues.playBehavior || []),
+    repetitiveBehavior:  avg(domainValues.repetitiveBehavior || []),
+    sensorySensitivity:  avg(domainValues.sensorySensitivity || []),
+    emotionalRegulation: avg(domainValues.emotionalRegulation || []),
+  };
 }
 
 export async function registerRoutes(
@@ -159,12 +215,12 @@ export async function registerRoutes(
         }
       }
 
-      const updated = await storage.updateUserRole(userId, input.role, input.name, input.centerId);
+      const updated = await storage.updateUserRole(userId, input.role, input.name, input.centerId, input.assignedBlock, input.assignedDistrict);
       logAudit({
         action: "update",
         resourceType: "user",
         resourceId: String(userId),
-        details: { role: input.role, previousRole: existingUser.role, centerId: input.centerId },
+        details: { role: input.role, previousRole: existingUser.role, centerId: input.centerId, assignedBlock: input.assignedBlock, assignedDistrict: input.assignedDistrict },
       });
       res.json(updated);
     } catch (err) {
@@ -972,6 +1028,21 @@ export async function registerRoutes(
     const cacheKey = `stats:scoped:${user.role}:${user.id}:${qDistrict || ""}:${qBlock || ""}:${qCenterId || ""}`;
     const stats = await cacheWrap(cacheKey, 1800, () => storage.getScopedProgramStats(scope));
     res.json(stats);
+  });
+
+  // === Locations (unique blocks/districts) ===
+  app.get(api.locations.list.path, async (req, res) => {
+    const allCenters = await storage.getCenters();
+    const districtSet = new Set<string>();
+    const blockSet = new Map<string, string>();
+    for (const c of allCenters) {
+      districtSet.add(c.district);
+      blockSet.set(c.block, c.district);
+    }
+    res.json({
+      districts: Array.from(districtSet).sort(),
+      blocks: Array.from(blockSet.entries()).map(([block, district]) => ({ block, district })).sort((a, b) => a.block.localeCompare(b.block)),
+    });
   });
 
   // === Centers ===

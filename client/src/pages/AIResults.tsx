@@ -28,7 +28,8 @@ interface AIResultsProps {
   domainScores?: Record<string, number> | null;
 }
 
-const DOMAIN_MAP: Record<string, string> = {
+// Legacy domain mapping (old q1-q5 screenings)
+const LEGACY_DOMAIN_MAP: Record<string, string> = {
   q1: "Motor Skills",
   q2: "Social Response",
   q3: "Nutrition",
@@ -36,7 +37,29 @@ const DOMAIN_MAP: Record<string, string> = {
   q5: "Language",
 };
 
-const SCORE_DOMAINS: { key: string; label: string; icon: string }[] = [
+// M-CHAT-R/F domain mapping (new t1/t2 screenings)
+const MCHAT_DOMAIN_MAP: Record<string, string> = {
+  t1_q1: "Communication", t1_q2: "Communication", t1_q3: "Communication",
+  t1_q4: "Joint Attention", t1_q5: "Social Interaction", t1_q6: "Social Interaction",
+  t1_q7: "Joint Attention", t1_q8: "Joint Attention", t1_q9: "Communication",
+  t1_q10: "Play Behavior", t1_q11: "Social Interaction", t1_q12: "Joint Attention",
+  t1_q13: "Repetitive Behavior", t1_q14: "Repetitive Behavior", t1_q15: "Sensory Sensitivity",
+  t2_q1: "Repetitive Behavior", t2_q2: "Communication", t2_q3: "Social Interaction",
+  t2_q4: "Social Interaction", t2_q5: "Social Interaction", t2_q6: "Repetitive Behavior",
+  t2_q7: "Repetitive Behavior", t2_q8: "Sensory Sensitivity", t2_q9: "Sensory Sensitivity",
+  t2_q10: "Emotional Regulation", t2_q11: "Emotional Regulation", t2_q12: "Repetitive Behavior",
+};
+
+// Reversed questions (where "yes" is concerning)
+const REVERSED_QUESTIONS = new Set([
+  "t1_q13", "t1_q14", "t1_q15",
+  "t2_q1", "t2_q2", "t2_q3", "t2_q4", "t2_q5", "t2_q6",
+  "t2_q7", "t2_q8", "t2_q9", "t2_q10", "t2_q11", "t2_q12",
+]);
+
+const DOMAIN_MAP: Record<string, string> = { ...LEGACY_DOMAIN_MAP, ...MCHAT_DOMAIN_MAP };
+
+const LEGACY_SCORE_DOMAINS: { key: string; label: string; icon: string }[] = [
   { key: "motor", label: "Motor Skills", icon: "🏃" },
   { key: "social", label: "Social Response", icon: "👥" },
   { key: "language", label: "Language", icon: "🗣" },
@@ -44,40 +67,108 @@ const SCORE_DOMAINS: { key: string; label: string; icon: string }[] = [
   { key: "cognitive", label: "Cognitive", icon: "🧠" },
 ];
 
+const MCHAT_SCORE_DOMAINS: { key: string; label: string; icon: string }[] = [
+  { key: "communication",       label: "Communication",        icon: "🗣" },
+  { key: "socialInteraction",   label: "Social Interaction",   icon: "👥" },
+  { key: "jointAttention",      label: "Joint Attention",      icon: "👀" },
+  { key: "playBehavior",        label: "Play Behavior",        icon: "🧸" },
+  { key: "repetitiveBehavior",  label: "Repetitive Behavior",  icon: "🔄" },
+  { key: "sensorySensitivity",  label: "Sensory Sensitivity",  icon: "👂" },
+  { key: "emotionalRegulation", label: "Emotional Regulation", icon: "💛" },
+];
+
+// Auto-detect which domain set to use based on domainScores keys
+function getScoreDomains(domainScores: Record<string, number> | null | undefined) {
+  if (!domainScores) return LEGACY_SCORE_DOMAINS;
+  if ("communication" in domainScores || "jointAttention" in domainScores) return MCHAT_SCORE_DOMAINS;
+  return LEGACY_SCORE_DOMAINS;
+}
+
 const DOMAIN_INTERVENTIONS: Record<string, { atRisk: string; monitor: string; whyFlagged: string; simpleExplanation: string }> = {
+  // Legacy domains
   "Motor Skills": {
     atRisk:  "Refer to a physiotherapist. Practice weight-bearing activities and structured motor exercises daily.",
     monitor: "Encourage regular physical activity and movement exercises. Reassess motor function at next visit.",
-    whyFlagged: "Motor skill responses suggest delayed gross or fine motor development for age. The child may not be reaching physical milestones such as sitting, crawling, or grasping objects at expected timeframes.",
+    whyFlagged: "Motor skill responses suggest delayed gross or fine motor development for age.",
     simpleExplanation: "Your child may need extra help with movement and physical activities. Try playing with blocks or balls every day.",
   },
   "Social Response": {
     atRisk:  "Refer to a specialist for evaluation. Practice name-call exercises, turn-taking, and structured social engagement routines every day.",
     monitor: "Increase interactive and group activities. Monitor social responsiveness over the next month.",
-    whyFlagged: "Social response assessment indicates limited engagement with caregivers or peers. The child may not respond to name-calling, show limited eye contact, or avoid turn-taking interactions.",
+    whyFlagged: "Social response assessment indicates limited engagement with caregivers or peers.",
     simpleExplanation: "Your child may need more practice with social activities. Try calling their name often and playing simple turn-taking games.",
   },
   "Nutrition": {
     atRisk:  "Refer to a nutritionist. Assess dietary intake and establish consistent, structured meal routines.",
     monitor: "Review dietary variety and nutritional balance. Track weight and eating patterns.",
-    whyFlagged: "Nutritional screening indicates potential dietary deficiencies or irregular eating patterns that could impact growth and development.",
+    whyFlagged: "Nutritional screening indicates potential dietary deficiencies or irregular eating patterns.",
     simpleExplanation: "Your child may not be getting enough healthy food. Try giving different fruits, vegetables, and proteins at regular meal times.",
   },
   "Eye Contact / Social": {
     atRisk:  "Screen for underlying conditions. Facilitate face-to-face interaction, mirror exercises, and joint attention activities.",
     monitor: "Encourage interactive engagement and shared-attention activities. Flag for specialist screening if no improvement in 6 weeks.",
-    whyFlagged: "Eye contact and joint attention patterns are below expected levels, which can indicate challenges in social-cognitive development or warrant further screening.",
+    whyFlagged: "Eye contact and joint attention patterns are below expected levels.",
     simpleExplanation: "Your child may need help with looking at faces and paying attention together. Try sitting face-to-face and playing peek-a-boo.",
   },
   "Language": {
-    atRisk:  "Refer to a speech-language therapist immediately. Encourage verbal interaction through daily routines and structured communication exercises.",
-    monitor: "Increase verbal interaction during daily activities. Use clear communication, pause for response, and practice regularly.",
-    whyFlagged: "Language development responses suggest delayed verbal or receptive language skills. The child may have limited vocabulary, not respond to verbal cues, or not babble/vocalize at expected levels.",
-    simpleExplanation: "Your child may need help with talking and understanding words. Speak to them often, name things around the house, and read simple books together.",
+    atRisk:  "Refer to a speech-language therapist immediately. Encourage verbal interaction through daily routines.",
+    monitor: "Increase verbal interaction during daily activities. Use clear communication and pause for response.",
+    whyFlagged: "Language development responses suggest delayed verbal or receptive language skills.",
+    simpleExplanation: "Your child may need help with talking and understanding words. Speak to them often and read simple books together.",
+  },
+  // M-CHAT-R/F domains
+  "Communication": {
+    atRisk:  "Refer to a speech-language specialist. Practice daily verbal interaction, gesture encouragement, and structured communication exercises.",
+    monitor: "Increase verbal interaction during daily activities. Encourage gestures, pointing, and simple word use.",
+    whyFlagged: "Communication responses indicate limited verbal or gestural communication for age. The person may not use words, follow instructions, or use gestures to communicate.",
+    simpleExplanation: "Your child may need help with talking and communicating. Try talking to them often, naming objects, and encouraging them to point at things.",
+  },
+  "Social Interaction": {
+    atRisk:  "Refer to a developmental specialist for evaluation. Practice structured social engagement with caregivers and peers daily.",
+    monitor: "Increase interactive play and social activities. Monitor social engagement over the next month.",
+    whyFlagged: "Social interaction patterns show limited engagement with others. The person may avoid eye contact, not smile back, or prefer being alone.",
+    simpleExplanation: "Your child may need more practice with social activities. Try playing together, smiling at them, and encouraging play with other children.",
+  },
+  "Joint Attention": {
+    atRisk:  "Screen for underlying developmental conditions. Practice pointing games, shared attention activities, and 'look at this' exercises daily.",
+    monitor: "Encourage shared-attention activities like reading together and pointing at objects. Reassess in 4 weeks.",
+    whyFlagged: "Joint attention skills are below expected levels. The person may not respond to name, point to show interest, or follow another person's gaze.",
+    simpleExplanation: "Your child may need help with paying attention together. Try calling their name, pointing at things, and saying 'look at this!' during play.",
+  },
+  "Play Behavior": {
+    atRisk:  "Refer for developmental assessment. Introduce structured pretend play activities and model imaginative play daily.",
+    monitor: "Encourage pretend play and creative activities. Provide toys that support imaginative play.",
+    whyFlagged: "Play behavior indicates limited pretend or imaginative play for age. The person may not engage in make-believe activities.",
+    simpleExplanation: "Your child may need help learning to play pretend. Try playing simple games like feeding a doll or pretending to cook together.",
+  },
+  "Repetitive Behavior": {
+    atRisk:  "Refer for specialist evaluation. These behaviors may indicate developmental concerns that need professional assessment.",
+    monitor: "Monitor frequency and intensity of repetitive behaviors. Document patterns and triggers for follow-up.",
+    whyFlagged: "Screening identified repetitive behaviors such as hand flapping, spinning objects, lining up toys, or strong resistance to routine changes.",
+    simpleExplanation: "Your child may repeat certain movements or actions a lot. Talk to the health worker about what you notice so they can help.",
+  },
+  "Sensory Sensitivity": {
+    atRisk:  "Refer to an occupational therapist for sensory evaluation. Create a sensory-friendly environment and avoid known triggers.",
+    monitor: "Track sensory reactions and triggers. Gradually introduce varied textures and sounds in a safe setting.",
+    whyFlagged: "Screening indicates heightened sensitivity to sounds, textures, or other sensory input that may affect daily functioning.",
+    simpleExplanation: "Your child may be very sensitive to sounds or textures. Try to keep things calm and slowly introduce new textures and sounds.",
+  },
+  "Emotional Regulation": {
+    atRisk:  "Refer for behavioral assessment. Implement structured calming routines and predictable daily schedules.",
+    monitor: "Practice calming techniques and establish consistent routines. Monitor frequency of intense emotional responses.",
+    whyFlagged: "Screening shows difficulty with emotional regulation, including frequent intense tantrums or difficulty calming down.",
+    simpleExplanation: "Your child may have big emotions that are hard to control. Try using a calm voice, keeping routines the same, and helping them take deep breaths.",
   },
 };
 
-function answerToStatus(answer: string): { status: string; icon: typeof Info } {
+function answerToStatus(answer: string, qId?: string): { status: string; icon: typeof Info } {
+  const reversed = qId ? REVERSED_QUESTIONS.has(qId) : false;
+  if (reversed) {
+    // "yes" is concerning for reversed questions
+    if (answer === "yes") return { status: "At Risk", icon: AlertCircle };
+    return { status: "Normal", icon: CheckCircle2 };
+  }
+  // Standard: "no" is concerning
   if (answer === "no")        return { status: "At Risk", icon: AlertCircle };
   if (answer === "sometimes") return { status: "Monitor",  icon: Info };
   return                             { status: "Normal",   icon: CheckCircle2 };
@@ -139,14 +230,14 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
   const flaggedDomains = answers
     ? Object.entries(answers).map(([qId, answer]) => ({
         name: DOMAIN_MAP[qId] ?? qId,
-        ...answerToStatus(answer),
+        ...answerToStatus(answer, qId),
       }))
     : [
         { name: "Communication",   status: "Monitor",  icon: Info         },
-        { name: "Gross Motor",     status: "Normal",   icon: CheckCircle2 },
-        { name: "Fine Motor",      status: "At Risk",  icon: AlertCircle  },
-        { name: "Problem Solving", status: "Normal",   icon: CheckCircle2 },
-        { name: "Personal-Social", status: "Normal",   icon: CheckCircle2 },
+        { name: "Social Interaction", status: "Normal", icon: CheckCircle2 },
+        { name: "Joint Attention", status: "At Risk",   icon: AlertCircle  },
+        { name: "Play Behavior",   status: "Normal",   icon: CheckCircle2 },
+        { name: "Repetitive Behavior", status: "Normal", icon: CheckCircle2 },
       ];
 
   const recommendation = explanation?.trim()
@@ -317,7 +408,7 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {SCORE_DOMAINS.map(({ key, label, icon }) => {
+            {getScoreDomains(domainScores).map(({ key, label, icon }) => {
               const score = (domainScores as Record<string, number>)[key] ?? 0;
               return (
                 <div key={key} className="space-y-1">

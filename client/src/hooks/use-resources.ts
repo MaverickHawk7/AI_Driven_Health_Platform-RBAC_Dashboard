@@ -523,7 +523,7 @@ export function useCreateUser() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: { username: string; password: string; name: string; role: string }) => {
+    mutationFn: async (data: { username: string; password: string; name: string; role: string; assignedBlock?: string; assignedDistrict?: string }) => {
       const res = await fetch(api.users.create.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -550,11 +550,13 @@ export function useUpdateUserRole() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, role, name, centerId }: { id: number; role: string; name?: string; centerId?: number | null }) => {
+    mutationFn: async ({ id, role, name, centerId, assignedBlock, assignedDistrict }: { id: number; role: string; name?: string; centerId?: number | null; assignedBlock?: string | null; assignedDistrict?: string | null }) => {
       const url = buildUrl(api.users.update.path, { id });
       const body: Record<string, any> = { role };
       if (name !== undefined) body.name = name;
       if (centerId !== undefined) body.centerId = centerId;
+      if (assignedBlock !== undefined) body.assignedBlock = assignedBlock;
+      if (assignedDistrict !== undefined) body.assignedDistrict = assignedDistrict;
       const res = await fetch(url, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -653,6 +655,17 @@ export function useUpsertAlertThreshold() {
   });
 }
 
+
+export function useLocations() {
+  return useQuery({
+    queryKey: [api.locations.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.locations.list.path);
+      if (!res.ok) throw new Error("Failed to fetch locations");
+      return res.json() as Promise<{ districts: string[]; blocks: { block: string; district: string }[] }>;
+    },
+  });
+}
 
 export function useCenters() {
   return useQuery({

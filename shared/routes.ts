@@ -44,6 +44,8 @@ export const api = {
         role: z.enum(["field_worker", "supervisor", "cdpo", "dwcweo", "higher_official", "admin"]),
         name: z.string().optional(),
         centerId: z.number().nullable().optional(),
+        assignedBlock: z.string().nullable().optional(),
+        assignedDistrict: z.string().nullable().optional(),
       }),
       responses: {
         200: z.custom<typeof users.$inferSelect>(),
@@ -69,6 +71,8 @@ export const api = {
         password: z.string().min(4, "Password must be at least 4 characters"),
         name: z.string().min(1, "Name is required"),
         role: z.enum(["field_worker", "supervisor", "cdpo", "dwcweo", "higher_official", "admin"]),
+        assignedBlock: z.string().optional(),
+        assignedDistrict: z.string().optional(),
       }),
       responses: {
         201: z.custom<typeof users.$inferSelect>(),
@@ -387,6 +391,18 @@ export const api = {
       responses: {
         200: z.custom<typeof centers.$inferSelect>(),
         404: errorSchemas.notFound,
+      },
+    },
+  },
+  locations: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/locations',
+      responses: {
+        200: z.object({
+          districts: z.array(z.string()),
+          blocks: z.array(z.object({ block: z.string(), district: z.string() })),
+        }),
       },
     },
   },

@@ -54,7 +54,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<SafeUser>;
   getAllUsers(): Promise<SafeUser[]>;
   validatePassword(username: string, password: string): Promise<SafeUser | null>;
-  updateUserRole(id: number, role: string, name?: string, centerId?: number | null): Promise<SafeUser>;
+  updateUserRole(id: number, role: string, name?: string, centerId?: number | null, assignedBlock?: string | null, assignedDistrict?: string | null): Promise<SafeUser>;
   renameUser(id: number, username: string): Promise<void>;
   deleteUser(id: number): Promise<void>;
   countUsersByRole(role: string): Promise<number>;
@@ -174,10 +174,12 @@ export class DatabaseStorage implements IStorage {
     return valid ? stripPassword(user) : null;
   }
 
-  async updateUserRole(id: number, role: string, name?: string, centerId?: number | null): Promise<SafeUser> {
+  async updateUserRole(id: number, role: string, name?: string, centerId?: number | null, assignedBlock?: string | null, assignedDistrict?: string | null): Promise<SafeUser> {
     const updates: Record<string, any> = { role };
     if (name !== undefined) updates.name = name;
     if (centerId !== undefined) updates.centerId = centerId;
+    if (assignedBlock !== undefined) updates.assignedBlock = assignedBlock;
+    if (assignedDistrict !== undefined) updates.assignedDistrict = assignedDistrict;
     const [updated] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
     if (!updated) throw new Error("User not found");
     return stripPassword(updated);
@@ -826,12 +828,14 @@ class InMemoryStorage implements IStorage {
     return valid ? stripPassword(user) : null;
   }
 
-  async updateUserRole(id: number, role: string, name?: string, centerId?: number | null): Promise<SafeUser> {
+  async updateUserRole(id: number, role: string, name?: string, centerId?: number | null, assignedBlock?: string | null, assignedDistrict?: string | null): Promise<SafeUser> {
     const user = this.users.find(u => u.id === id);
     if (!user) throw new Error("User not found");
     user.role = role as any;
     if (name !== undefined) user.name = name;
     if (centerId !== undefined) user.centerId = centerId;
+    if (assignedBlock !== undefined) (user as any).assignedBlock = assignedBlock;
+    if (assignedDistrict !== undefined) (user as any).assignedDistrict = assignedDistrict;
     return stripPassword(user);
   }
 
@@ -875,6 +879,9 @@ class InMemoryStorage implements IStorage {
       createdAt: this.now(),
       contactNumber: null,
       address: null,
+      patientIdNumber: null,
+      district: null,
+      block: null,
       registeredByUserId: null,
       centerId: null,
       ...p,

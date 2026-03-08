@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, AlertTriangle, TrendingDown, Activity, ArrowRight, Grid3X3, ClipboardCheck, Filter } from "lucide-react";
-import { useScopedStats, useAlertCounts, useAlerts, useClusterDomains, useDomainHeatmap, useCenters } from "@/hooks/use-resources";
+import { useScopedStats, useAlertCounts, useAlerts, useClusterDomains, useDomainHeatmap, useCenters, useLocations } from "@/hooks/use-resources";
+import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -17,19 +18,28 @@ function heatmapColor(value: number): string {
 }
 
 export default function CDPODashboard() {
+  const { user } = useAuth();
+  const assignedBlock = (user as any)?.assignedBlock || "";
+  const [selectedBlock, setSelectedBlock] = useState<string>(assignedBlock);
   const [centerFilter, setCenterFilter] = useState<string>("");
 
-  const { data: stats, isLoading: statsLoading } = useScopedStats(
-    centerFilter ? { centerId: centerFilter } : undefined
-  );
+  const { data: locations } = useLocations();
+  const allBlocks = locations?.blocks?.map(b => b.block) || [];
+
+  const statsFilter = selectedBlock
+    ? centerFilter
+      ? { centerId: centerFilter }
+      : { block: selectedBlock }
+    : centerFilter
+      ? { centerId: centerFilter }
+      : undefined;
+
+  const { data: stats, isLoading: statsLoading } = useScopedStats(statsFilter);
   const { data: alertCounts } = useAlertCounts();
   const { data: regressionAlerts } = useAlerts({ type: "no_improvement", status: "active" });
   const { data: clusterDomains } = useClusterDomains();
   const { data: domainHeatmap } = useDomainHeatmap();
   const { data: centersList } = useCenters();
-
-  // Derive unique blocks from centers (for display)
-  const currentBlock = centersList?.[0]?.block ?? "—";
 
   // Filter cluster/heatmap data by selected center
   const filteredClusterDomains = centerFilter
@@ -76,10 +86,17 @@ export default function CDPODashboard() {
               Filters
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Block:</span>
-              <Badge variant="outline" className="text-xs font-medium">{currentBlock}</Badge>
-            </div>
+            <Select value={selectedBlock || "all"} onValueChange={v => { setSelectedBlock(v === "all" ? "" : v); setCenterFilter(""); }}>
+              <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
+                <SelectValue placeholder="Block" />
+              </SelectTrigger>
+              <SelectContent className="bg-background">
+                <SelectItem value="all">All Blocks</SelectItem>
+                {allBlocks.map(b => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Select value={centerFilter || "all"} onValueChange={v => setCenterFilter(v === "all" ? "" : v)}>
               <SelectTrigger className="w-[200px] h-8 text-xs bg-background">
@@ -93,14 +110,14 @@ export default function CDPODashboard() {
               </SelectContent>
             </Select>
 
-            {centerFilter && (
+            {(centerFilter || selectedBlock !== assignedBlock) && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 text-xs text-muted-foreground"
-                onClick={() => setCenterFilter("")}
+                onClick={() => { setCenterFilter(""); setSelectedBlock(assignedBlock); }}
               >
-                Clear
+                Reset
               </Button>
             )}
           </div>
@@ -111,7 +128,7 @@ export default function CDPODashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-white to-blue-50 border-blue-100">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-900">Total Children Screened</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-900">Total Persons Screened</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-700">{stats?.totalPatients ?? 0}</div>

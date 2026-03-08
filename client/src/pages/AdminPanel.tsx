@@ -84,13 +84,34 @@ export default function AdminPanel() {
       username: "",
       password: "",
       role: "field_worker",
+      assignedBlock: "",
+      assignedDistrict: "",
     }
   });
+
+  const watchedRole = form.watch("role");
+
+  // Derive unique blocks and districts from centers for assignment dropdowns
+  const uniqueBlocks = useMemo(() => {
+    if (!centers) return [];
+    return Array.from(new Set((centers as any[]).map((c: any) => c.block))).filter(Boolean).sort();
+  }, [centers]);
+
+  const uniqueDistricts = useMemo(() => {
+    if (!centers) return [];
+    return Array.from(new Set((centers as any[]).map((c: any) => c.district))).filter(Boolean).sort();
+  }, [centers]);
 
   const onSubmit = (data: any) => {
     if (editingUser) {
       updateUserRole(
-        { id: editingUser.id, role: data.role, name: data.name },
+        {
+          id: editingUser.id,
+          role: data.role,
+          name: data.name,
+          assignedBlock: data.role === "cdpo" ? (data.assignedBlock || null) : null,
+          assignedDistrict: data.role === "dwcweo" ? (data.assignedDistrict || null) : null,
+        },
         {
           onSuccess: () => {
             setIsAddUserOpen(false);
@@ -105,7 +126,14 @@ export default function AdminPanel() {
         return;
       }
       createUser(
-        { username: data.username, password: data.password, name: data.name, role: data.role },
+        {
+          username: data.username,
+          password: data.password,
+          name: data.name,
+          role: data.role,
+          ...(data.role === "cdpo" && data.assignedBlock ? { assignedBlock: data.assignedBlock } : {}),
+          ...(data.role === "dwcweo" && data.assignedDistrict ? { assignedDistrict: data.assignedDistrict } : {}),
+        },
         {
           onSuccess: () => {
             setIsAddUserOpen(false);
@@ -123,6 +151,8 @@ export default function AdminPanel() {
       name: user.name,
       username: user.username,
       role: user.role,
+      assignedBlock: user.assignedBlock || "",
+      assignedDistrict: user.assignedDistrict || "",
     });
     setIsAddUserOpen(true);
   };
@@ -245,6 +275,49 @@ export default function AdminPanel() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Block assignment for CDPO */}
+                  {watchedRole === "cdpo" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="assignedBlock">Assigned Block</Label>
+                      <Select
+                        value={form.watch("assignedBlock") || ""}
+                        onValueChange={(val) => form.setValue("assignedBlock", val)}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select block..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background">
+                          {uniqueBlocks.map((b: string) => (
+                            <SelectItem key={b} value={b}>{b}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">CDPO dashboard will show data for this block.</p>
+                    </div>
+                  )}
+
+                  {/* District assignment for DWCWEO */}
+                  {watchedRole === "dwcweo" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="assignedDistrict">Assigned District</Label>
+                      <Select
+                        value={form.watch("assignedDistrict") || ""}
+                        onValueChange={(val) => form.setValue("assignedDistrict", val)}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select district..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background">
+                          {uniqueDistricts.map((d: string) => (
+                            <SelectItem key={d} value={d}>{d}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">DWCWEO dashboard will show data for this district.</p>
+                    </div>
+                  )}
+
                   <DialogFooter>
                     <Button type="submit" disabled={isUpdatingRole || isCreatingUser}>
                       {(isUpdatingRole || isCreatingUser) ? "Saving..." : editingUser ? "Save Changes" : "Create User"}
