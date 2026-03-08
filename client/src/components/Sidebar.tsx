@@ -122,11 +122,11 @@ function NavItem({ item, location, collapsed, unreadCount, t, onNavigate }: {
       <div
         onClick={onNavigate}
         className={cn(
-          "flex items-center gap-3 rounded-md text-sm font-medium transition-colors cursor-pointer",
+          "flex items-center gap-3 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer",
           collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2",
           isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            ? "bg-purple-500/15 text-purple-700 dark:text-purple-300 shadow-sm border-l-2 border-purple-500"
+            : "text-sidebar-foreground/70 hover:bg-purple-500/10 hover:text-purple-600 dark:hover:text-purple-300"
         )}
       >
         <item.icon className="w-4 h-4 shrink-0" />
@@ -273,7 +273,7 @@ function SidebarContent({ collapsed = false, onNavigate, onToggle }: {
             </TooltipContent>
           </Tooltip>
         ) : (
-          <div className="mb-1 flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground/70 rounded-md">
+          <div className="mb-1 flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground/70 rounded-md hover:text-purple-600 dark:hover:text-purple-300 transition-colors duration-200 cursor-pointer active:text-purple-700 dark:active:text-purple-400">
             <Languages className="w-4 h-4 shrink-0" />
             <select
               value={lang}
@@ -304,7 +304,7 @@ function SidebarContent({ collapsed = false, onNavigate, onToggle }: {
         ) : (
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 rounded-md transition-colors mb-1"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-sidebar-foreground/70 hover:text-purple-600 dark:hover:text-purple-300 rounded-md transition-colors duration-200 cursor-pointer active:text-purple-700 dark:active:text-purple-400 mb-1"
           >
             {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             {theme === "dark" ? t("Light Mode") : t("Dark Mode")}
