@@ -37,31 +37,40 @@ export default function FieldWorkerHome() {
           ))
         ) : (
           <>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-medium uppercase"><T>Patients</T></p>
-                <p className="text-2xl font-bold mt-1">{totalPatients}</p>
+            <Card className="bg-gradient-to-br from-white to-blue-50 border-blue-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-blue-900"><T>Patients</T></CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-blue-700">{totalPatients}</div>
+                <p className="text-xs text-blue-600/80 mt-1"><T>Registered patients</T></p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-medium uppercase"><T>Screenings</T></p>
-                <p className="text-2xl font-bold mt-1">{totalScreenings}</p>
+            <Card className="bg-gradient-to-br from-white to-emerald-50 border-emerald-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-emerald-900"><T>Screenings</T></CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-emerald-700">{totalScreenings}</div>
+                <p className="text-xs text-emerald-600/80 mt-1"><T>Total conducted</T></p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4 flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase">High Risk</p>
-                  <p className="text-2xl font-bold mt-1 text-destructive">{highRiskCount}</p>
-                </div>
-                {highRiskCount > 0 && <AlertTriangle className="w-5 h-5 text-destructive mt-1" />}
+            <Card className="bg-gradient-to-br from-white to-rose-50 border-rose-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-rose-900"><T>High Risk</T></CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-rose-700">{highRiskCount}</div>
+                <p className="text-xs text-rose-600/80 mt-1"><T>Need attention</T></p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground font-medium uppercase"><T>Unread Messages</T></p>
-                <p className="text-2xl font-bold mt-1">{unreadCount}</p>
+            <Card className="bg-gradient-to-br from-white to-amber-50 border-amber-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-amber-900"><T>Unread Messages</T></CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-amber-700">{unreadCount}</div>
+                <p className="text-xs text-amber-600/80 mt-1"><T>Pending messages</T></p>
               </CardContent>
             </Card>
           </>

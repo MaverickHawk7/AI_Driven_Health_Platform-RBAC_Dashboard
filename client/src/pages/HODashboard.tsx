@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Globe, Brain, TrendingUp, Users, Filter } from "lucide-react";
 import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters } from "@/hooks/use-resources";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter, Cell, ZAxis } from "recharts";
+import { DISTRICTS } from "@shared/constants";
 
 export default function HODashboard() {
   const [districtFilter, setDistrictFilter] = useState<string>("");
@@ -22,11 +23,7 @@ export default function HODashboard() {
   const { data: districtComp } = useDistrictComparison();
   const { data: centersList } = useCenters();
 
-  // Derive unique districts from centers
-  const uniqueDistricts = useMemo(() => {
-    if (!centersList) return [];
-    return Array.from(new Set(centersList.map((c: any) => c.district))).sort();
-  }, [centersList]);
+  const uniqueDistricts = DISTRICTS;
 
   // Blocks filtered by selected district
   const uniqueBlocks = useMemo(() => {

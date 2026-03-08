@@ -1,0 +1,31 @@
+// Andhra Pradesh Districts (all 26)
+export const DISTRICTS = [
+  "Alluri Sitharama Raju",
+  "Anakapalli",
+  "Anantapur",
+  "Annamayya",
+  "Bapatla",
+  "Chittoor",
+  "East Godavari",
+  "Eluru",
+  "Guntur",
+  "Kakinada",
+  "Konaseema",
+  "Krishna",
+  "Kurnool",
+  "Nandyal",
+  "NTR",
+  "Palnadu",
+  "Parvathipuram Manyam",
+  "Prakasam",
+  "Sri Potti Sriramulu Nellore",
+  "Sri Sathya Sai",
+  "Srikakulam",
+  "Tirupati",
+  "Visakhapatnam",
+  "Vizianagaram",
+  "West Godavari",
+  "YSR Kadapa",
+] as const;
+
+export type District = typeof DISTRICTS[number];

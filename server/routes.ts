@@ -12,6 +12,7 @@ import { logAudit } from "./services/auditLogger";
 import { evaluateAlertTriggers } from "./services/alertEngine";
 import { generateDistrictReport, reportToCSV } from "./services/reportGenerator";
 import { cacheWrap, invalidateCache, pingRedis } from "./redis";
+import { DISTRICTS } from "@shared/constants";
 import { pool } from "./db";
 import { predictRiskTrajectory, type ScreeningHistoryEntry } from "./services/ai/predictiveAnalyzer";
 import { adjustInterventionIntensity } from "./services/ai/dynamicRecommender";
@@ -1040,7 +1041,7 @@ export async function registerRoutes(
   // === Locations (unique blocks/districts) ===
   app.get(api.locations.list.path, async (req, res) => {
     const allCenters = await storage.getCenters();
-    const districtSet = new Set<string>();
+    const districtSet = new Set<string>(DISTRICTS);
     const blockSet = new Map<string, string>();
     for (const c of allCenters) {
       districtSet.add(c.district);
@@ -1732,36 +1733,36 @@ async function seedDatabase() {
     const center1 = await storage.createCenter({
       name: "AWC Sector 5",
       block: "Block-A",
-      district: "District-1",
-      state: "State-1",
+      district: "Visakhapatnam",
+      state: "Andhra Pradesh",
       ngoName: "NGO Foundation",
     });
     const center2 = await storage.createCenter({
       name: "AWC Sector 12",
       block: "Block-A",
-      district: "District-1",
-      state: "State-1",
+      district: "Visakhapatnam",
+      state: "Andhra Pradesh",
       ngoName: "NGO Foundation",
     });
     const center3 = await storage.createCenter({
       name: "AWC Sector 8",
       block: "Block-A",
-      district: "District-1",
-      state: "State-1",
+      district: "Visakhapatnam",
+      state: "Andhra Pradesh",
       ngoName: "Child Welfare Trust",
     });
     const center4 = await storage.createCenter({
       name: "AWC Sector 3",
       block: "Block-A",
-      district: "District-1",
-      state: "State-1",
+      district: "Visakhapatnam",
+      state: "Andhra Pradesh",
       ngoName: "Child Welfare Trust",
     });
     const center5 = await storage.createCenter({
       name: "AWC Sector 17",
       block: "Block-B",
-      district: "District-1",
-      state: "State-1",
+      district: "Visakhapatnam",
+      state: "Andhra Pradesh",
       ngoName: "Rural Health Initiative",
     });
 
@@ -1771,7 +1772,7 @@ async function seedDatabase() {
     const worker3 = await storage.createUser({ username: "field worker 3", password: "password", name: "Field Worker Anita", role: "field_worker", centerId: center3.id } as any);
     const superUser = await storage.createUser({ username: "supervisor", password: "password", name: "Supervisor John", role: "supervisor" });
     await storage.createUser({ username: "cdpo", password: "password", name: "CDPO Officer Priya", role: "cdpo", assignedBlock: "Block-A" } as any);
-    await storage.createUser({ username: "dwcweo", password: "password", name: "DW&CW&EO Officer Ramesh", role: "dwcweo", assignedDistrict: "District-1" } as any);
+    await storage.createUser({ username: "dwcweo", password: "password", name: "DW&CW&EO Officer Ramesh", role: "dwcweo", assignedDistrict: "Visakhapatnam" } as any);
     await storage.createUser({ username: "higher official", password: "password", name: "State Director Sunita", role: "higher_official" });
     const adminUser = await storage.createUser({ username: "admin", password: "password", name: "System Admin", role: "admin" });
 

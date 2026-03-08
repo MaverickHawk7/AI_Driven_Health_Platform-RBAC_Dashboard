@@ -286,27 +286,12 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
         </div>
         <div className="flex items-center gap-2">
           <CaregiverToggle isActive={caregiverMode} onToggle={toggleCaregiver} />
-          <div className="flex flex-col items-end gap-2">
-            {hasRealData && source === "yolo" && (
-              <Badge className="gap-1.5 bg-green-100 text-green-700 border-green-200 font-medium">
-                <BrainCircuit className="w-3.5 h-3.5" />
-                Local YOLO model analysis
-              </Badge>
-            )}
-            {hasRealData && source === "ai" && (
-              <Badge className="gap-1.5 bg-blue-100 text-blue-700 border-blue-200 font-medium">
-                <BrainCircuit className="w-3.5 h-3.5" />
-                AI-powered analysis
-              </Badge>
+          <div className="flex items-center gap-2">
+            {hasRealData && (source === "ai" || source === "yolo") && (
+              <span className="w-2.5 h-2.5 rounded-full bg-green-400" title="AI available" />
             )}
             {hasRealData && source === "fallback" && (
-              <Badge variant="outline" className="gap-1.5 text-amber-700 border-amber-300 bg-amber-50 font-medium">
-                <Calculator className="w-3.5 h-3.5" />
-                Rule-based analysis (AI unavailable)
-              </Badge>
-            )}
-            {!hasRealData && (
-              <Badge variant="outline" className="text-xs font-normal">Illustrative data</Badge>
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" title="AI unavailable — rule-based analysis" />
             )}
             <span className="text-xs text-muted-foreground">non-diagnostic</span>
           </div>
@@ -564,21 +549,14 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
 
             <p className="text-sm text-muted-foreground">{photoAnalysis.explanation}</p>
 
-            {photoAnalysis.source === "yolo" && (
-              <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50">
-                Local YOLO model analysis
-              </Badge>
-            )}
-            {photoAnalysis.source === "ai" && (
-              <Badge variant="outline" className="text-xs text-blue-700 border-blue-300 bg-blue-50">
-                Cloud AI analysis
-              </Badge>
-            )}
-            {photoAnalysis.source === "fallback" && (
-              <Badge variant="outline" className="text-xs text-amber-700 border-amber-300 bg-amber-50">
-                AI unavailable — fallback result
-              </Badge>
-            )}
+            <div className="flex items-center gap-1.5">
+              {(photoAnalysis.source === "ai" || photoAnalysis.source === "yolo") && (
+                <span className="w-2 h-2 rounded-full bg-green-400" title="AI available" />
+              )}
+              {photoAnalysis.source === "fallback" && (
+                <span className="w-2 h-2 rounded-full bg-amber-400" title="AI unavailable" />
+              )}
+            </div>
 
             <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
               <p className="text-xs text-amber-700">

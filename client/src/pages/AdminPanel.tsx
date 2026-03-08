@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { UploadCloud, Shield, UserPlus, Edit2, CheckCircle2, ScrollText, Bell, Settings, AlertTriangle, Link2, Trash2, Building2, Users, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
+import { DISTRICTS } from "@shared/constants";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 
@@ -97,10 +98,7 @@ export default function AdminPanel() {
     return Array.from(new Set((centers as any[]).map((c: any) => c.block))).filter(Boolean).sort();
   }, [centers]);
 
-  const uniqueDistricts = useMemo(() => {
-    if (!centers) return [];
-    return Array.from(new Set((centers as any[]).map((c: any) => c.district))).filter(Boolean).sort();
-  }, [centers]);
+  const uniqueDistricts = DISTRICTS;
 
   const onSubmit = (data: any) => {
     if (editingUser) {
