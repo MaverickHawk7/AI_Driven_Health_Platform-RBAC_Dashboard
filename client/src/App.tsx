@@ -10,7 +10,8 @@ import { LanguageProvider } from "@/hooks/use-language";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Sidebar } from "@/components/Sidebar";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { WifiOff } from "lucide-react";
+import { WifiOff, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 
 import FieldWorkerHome from "@/pages/FieldWorkerHome";
 import AIResults from "@/pages/AIResults";
@@ -55,10 +56,23 @@ function ProtectedRoute({ component: Component, allowedRoles }: { component: any
     return <Redirect to="/login" />;
   }
 
+  const HOME_ROUTES = ['/field-worker/home', '/dashboard', '/cdpo-dashboard', '/dwcweo-dashboard', '/ho-dashboard', '/admin'];
+  const [location] = useLocation();
+  const isHome = HOME_ROUTES.includes(location);
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex-1 overflow-y-auto pt-14 md:pt-0">
+        {!isHome && (
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm ml-4 mt-3 mb-0 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        )}
         <Component />
       </main>
     </div>

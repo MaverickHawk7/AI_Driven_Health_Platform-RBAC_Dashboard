@@ -106,6 +106,68 @@
   background-size: 220px 220px;
 }
 
+/* Card hover glow (dark mode) & lift */
+.shadcn-card {
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.shadcn-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.dark .shadcn-card:hover {
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.06), 0 0 0 1px rgba(96, 165, 250, 0.08);
+  border-color: hsl(217 91% 60% / 0.15);
+}
+
+/* Smooth focus ring animation */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+  transition: box-shadow 0.15s ease;
+}
+
+/* Skeleton shimmer (replaces plain pulse) */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted-foreground) / 0.07) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* Subtle button ripple */
+@keyframes ripple-out {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0.35; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+button:not(:disabled) {
+  position: relative;
+  overflow: hidden;
+}
+button:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  top: var(--ripple-y, 50%);
+  left: var(--ripple-x, 50%);
+  transform: translate(-50%, -50%) scale(0);
+}
+button:not(:disabled):active::after {
+  animation: ripple-out 0.45s ease-out;
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;

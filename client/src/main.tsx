@@ -15,4 +15,14 @@ posthog.init("phc_MrXV3PCikXZCJDzdE1KlvVc4GYP08BYRL9BNjXZvTyE", {
   },
 });
 
+// Track click position for button ripple effect
+document.addEventListener("mousedown", (e) => {
+  const btn = (e.target as HTMLElement).closest("button");
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    btn.style.setProperty("--ripple-x", `${e.clientX - rect.left}px`);
+    btn.style.setProperty("--ripple-y", `${e.clientY - rect.top}px`);
+  }
+});
+
 createRoot(document.getElementById("root")!).render(<App />);
