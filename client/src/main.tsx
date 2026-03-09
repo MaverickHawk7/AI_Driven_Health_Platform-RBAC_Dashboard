@@ -8,7 +8,9 @@ posthog.init("phc_MrXV3PCikXZCJDzdE1KlvVc4GYP08BYRL9BNjXZvTyE", {
   autocapture: true,
   capture_pageview: true,
   capture_pageleave: true,
+  disable_session_recording: false,
   session_recording: {
+    maskAllInputs: false,
     recordCrossOriginIframes: true,
   },
 });
