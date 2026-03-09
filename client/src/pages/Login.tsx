@@ -185,7 +185,7 @@ export default function Login() {
               <span className="text-primary">{t("Health Monitoring & Screening")}</span>
             </h1>
             <p className="text-muted-foreground">
-              {t("Intelligent health screening, risk detection, and intervention tracking for ICDS field operations.")}
+              {t("Intelligent health screening, risk detection, and intervention tracking for field operations.")}
             </p>
           </div>
 
