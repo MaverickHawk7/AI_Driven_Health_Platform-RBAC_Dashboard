@@ -186,8 +186,7 @@ export default function Login() {
 
             <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-400 dark:border-amber-500 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-300">
               <p className="font-bold text-base text-amber-600 dark:text-amber-400 mb-1">{t("Demo Access")}</p>
-              <p>Username is the role name (as shown in dropdown), password is <span className="font-mono font-bold">password</span></p>
-              <p className="mt-1">e.g. Username: <span className="font-mono font-bold">field worker</span>, Password: <span className="font-mono font-bold">password</span></p>
+              <p>Just select a role from the dropdown — credentials will be auto-filled. Then click <span className="font-bold">Sign In</span>.</p>
             </div>
 
           </CardContent>
