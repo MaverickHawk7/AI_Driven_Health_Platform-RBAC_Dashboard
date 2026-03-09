@@ -346,7 +346,7 @@ export default function SupervisorDashboard() {
                   <TableHead className="text-center">Risk Score</TableHead>
                   <TableHead className="text-center">Days Since Action</TableHead>
                   <TableHead>Reason</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -362,7 +362,7 @@ export default function SupervisorDashboard() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.reason}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">
                       <Link href={`/patients/${p.id}`}>
                         <Button size="sm" variant="ghost" className="hover:text-primary">
                           View <ArrowRight className="ml-1 w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export default function SupervisorDashboard() {
                 <TableHead className="text-center">Risk Score</TableHead>
                 <TableHead className="text-center">Days Since Screening</TableHead>
                 <TableHead className="text-center">Type</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="text-center">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -466,7 +466,7 @@ export default function SupervisorDashboard() {
                   <TableCell className="text-center">
                     <span className="text-xs text-muted-foreground capitalize">{c.screeningType?.replace("_", " ")}</span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-center">
                     <Link href={`/patients/${c.id}`}>
                       <Button size="sm" variant="ghost" className="hover:text-primary">
                         View <ArrowRight className="ml-1 w-3.5 h-3.5" />
@@ -583,7 +583,7 @@ export default function SupervisorDashboard() {
                   <TableHead className="text-center">Risk Level</TableHead>
                   <TableHead className="text-center">Due Type</TableHead>
                   <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-center">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -607,7 +607,7 @@ export default function SupervisorDashboard() {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-center">
                       <Link href={`/patients/${f.id}`}>
                         <Button size="sm" variant="ghost" className="hover:text-primary">
                           View <ArrowRight className="ml-1 w-3.5 h-3.5" />

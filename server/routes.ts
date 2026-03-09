@@ -1811,6 +1811,9 @@ async function seedDatabase() {
     const p7 = await storage.createPatient({ name: "Ananya Gupta", ageMonths: 10, caregiverName: "Pooja Gupta", contactNumber: "555-0401", address: "33 Temple Rd", centerId: center4.id });
     const p8 = await storage.createPatient({ name: "Vikram Rao", ageMonths: 28, caregiverName: "Lakshmi Rao", contactNumber: "555-0501", address: "67 River Side", centerId: center5.id });
 
+    // Helper: date N days ago
+    const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+
     // Create Mock Screenings with domain scores for all centers
     // Center 1 - AWC Sector 5
     await storage.createScreening({
@@ -1819,7 +1822,7 @@ async function seedDatabase() {
       riskScore: 85,
       riskLevel: "High",
       conductedByUserId: workerUser.id,
-      date: new Date("2024-01-15"),
+      date: daysAgo(12),
       screeningType: "baseline",
       domainScores: { motor: 45, social: 70, nutrition: 55, language: 80, cognitive: 43 },
     } as any);
@@ -1830,7 +1833,7 @@ async function seedDatabase() {
       riskScore: 20,
       riskLevel: "Low",
       conductedByUserId: workerUser.id,
-      date: new Date("2024-02-01"),
+      date: daysAgo(8),
       screeningType: "baseline",
       domainScores: { motor: 85, social: 90, nutrition: 75, language: 88, cognitive: 82 },
     } as any);
@@ -1842,7 +1845,7 @@ async function seedDatabase() {
       riskScore: 60,
       riskLevel: "Medium",
       conductedByUserId: worker2.id,
-      date: new Date("2024-01-20"),
+      date: daysAgo(28),
       screeningType: "baseline",
       domainScores: { motor: 60, social: 55, nutrition: 70, language: 65, cognitive: 58 },
     } as any);
@@ -1853,7 +1856,7 @@ async function seedDatabase() {
       riskScore: 35,
       riskLevel: "Low",
       conductedByUserId: worker2.id,
-      date: new Date("2024-02-10"),
+      date: daysAgo(5),
       screeningType: "baseline",
       domainScores: { motor: 78, social: 82, nutrition: 68, language: 75, cognitive: 72 },
     } as any);
@@ -1865,9 +1868,21 @@ async function seedDatabase() {
       riskScore: 75,
       riskLevel: "High",
       conductedByUserId: worker3.id,
-      date: new Date("2024-01-25"),
+      date: daysAgo(25),
       screeningType: "baseline",
       domainScores: { motor: 35, social: 40, nutrition: 50, language: 45, cognitive: 38 },
+    } as any);
+
+    // Reassessment for p5 done 3 days ago — improved
+    await storage.createScreening({
+      patientId: p5.id,
+      answers: { q1: "yes", q2: "no", q3: "yes", q4: "yes", q5: "yes" },
+      riskScore: 50,
+      riskLevel: "Medium",
+      conductedByUserId: worker3.id,
+      date: daysAgo(3),
+      screeningType: "3_month",
+      domainScores: { motor: 50, social: 55, nutrition: 62, language: 58, cognitive: 50 },
     } as any);
 
     await storage.createScreening({
@@ -1876,7 +1891,7 @@ async function seedDatabase() {
       riskScore: 40,
       riskLevel: "Medium",
       conductedByUserId: worker3.id,
-      date: new Date("2024-02-15"),
+      date: daysAgo(18),
       screeningType: "baseline",
       domainScores: { motor: 72, social: 65, nutrition: 80, language: 70, cognitive: 68 },
     } as any);
@@ -1888,7 +1903,7 @@ async function seedDatabase() {
       riskScore: 50,
       riskLevel: "Medium",
       conductedByUserId: workerUser.id,
-      date: new Date("2024-02-05"),
+      date: daysAgo(15),
       screeningType: "baseline",
       domainScores: { motor: 55, social: 60, nutrition: 45, language: 52, cognitive: 48 },
     } as any);
@@ -1900,7 +1915,7 @@ async function seedDatabase() {
       riskScore: 30,
       riskLevel: "Low",
       conductedByUserId: workerUser.id,
-      date: new Date("2024-02-20"),
+      date: daysAgo(3),
       screeningType: "baseline",
       domainScores: { motor: 88, social: 92, nutrition: 85, language: 90, cognitive: 87 },
     } as any);
@@ -1910,14 +1925,14 @@ async function seedDatabase() {
       patientId: p1.id,
       recommendation: "Speech therapy evaluation recommended.",
       status: "in_progress",
-      notes: "Referral sent on Jan 16th."
+      notes: "Referral sent after baseline screening."
     });
 
     await storage.createIntervention({
       patientId: p5.id,
       recommendation: "Nutritional supplementation and motor skills therapy.",
       status: "in_progress",
-      notes: "Referral initiated on Jan 26th."
+      notes: "Referral initiated after baseline screening."
     });
   }
 }

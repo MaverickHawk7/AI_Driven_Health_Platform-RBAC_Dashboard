@@ -223,7 +223,7 @@ export default function MessagesInbox() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="p-8 max-w-6xl mx-auto space-y-7">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Messages</h1>

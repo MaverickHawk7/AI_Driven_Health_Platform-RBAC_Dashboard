@@ -23,14 +23,14 @@ export default function FieldWorkerHome() {
   const isLoading = patientsLoading || screeningsLoading;
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-7">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold tracking-tight"><T>Welcome,</T> {user?.name}</h1>
         <p className="text-muted-foreground"><T>Community Health Field Worker Dashboard</T></p>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}><CardContent className="p-4"><Skeleton className="h-4 w-20 mb-2" /><Skeleton className="h-8 w-12" /></CardContent></Card>

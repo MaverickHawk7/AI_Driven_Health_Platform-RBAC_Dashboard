@@ -49,14 +49,14 @@ export default function AlertsDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-7">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Alert Management</h1>
         <p className="text-muted-foreground text-sm mt-1">Monitor and respond to system-generated alerts</p>
       </div>
 
       {/* Severity summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { key: "critical", label: "Critical", color: "text-red-600 bg-red-50 border-red-200" },
           { key: "high", label: "High", color: "text-orange-600 bg-orange-50 border-orange-200" },

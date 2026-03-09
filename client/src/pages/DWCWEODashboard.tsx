@@ -117,7 +117,7 @@ export default function DWCWEODashboard({ embedded }: { embedded?: boolean } = {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-7 max-w-7xl mx-auto">
       {!embedded && (
         <div className="flex items-center justify-between">
           <div>
@@ -199,7 +199,7 @@ export default function DWCWEODashboard({ embedded }: { embedded?: boolean } = {
       </Card>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <Card className="bg-gradient-to-br from-white to-blue-50 border-blue-100">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-blue-900">Total Children</CardTitle>

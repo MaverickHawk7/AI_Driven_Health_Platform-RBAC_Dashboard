@@ -147,7 +147,7 @@ export default function HODashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-7 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -219,7 +219,7 @@ export default function HODashboard() {
       </Card>
 
       {/* KPI Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <Card className="bg-gradient-to-br from-white to-blue-50 border-blue-100">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-blue-900">Total Children (State)</CardTitle>
@@ -265,7 +265,7 @@ export default function HODashboard() {
           <CardDescription>Proxy metrics for AI model reliability and usage patterns.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             <div className="p-4 rounded-lg border bg-gradient-to-br from-white to-indigo-50">
               <p className="text-sm text-muted-foreground">AI Usage Rate</p>
               <p className="text-2xl font-bold mt-1 text-indigo-700">

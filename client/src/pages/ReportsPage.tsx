@@ -70,7 +70,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-7">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">District Reports</h1>
         <p className="text-muted-foreground text-sm mt-1">Generate and export program performance reports</p>
@@ -118,7 +118,7 @@ export default function ReportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Button
                 variant="outline"
                 className="gap-2 h-auto py-3 flex-col"

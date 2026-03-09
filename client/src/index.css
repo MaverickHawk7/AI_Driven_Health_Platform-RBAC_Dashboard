@@ -27,7 +27,12 @@
   --border: 214 32% 91%;
   --input: 214 32% 91%;
   --ring: 221 83% 53%;
-  
+
+  /* Cards — slightly off-white, between sidebar (white) and greyed main area */
+  --card: 210 20% 99%;
+  --card-foreground: 222 47% 11%;
+  --card-border: 214 32% 91%;
+
   --radius: 0.75rem;
   
   /* Chart Colors */
@@ -38,6 +43,16 @@
   
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Sidebar — clean white against greyed main area */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 47% 11%;
+  --sidebar-border: 214 32% 91%;
+  --sidebar-accent: 210 40% 96%;
+  --sidebar-accent-foreground: 222 47% 11%;
+  --sidebar-primary: 221 83% 53%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-ring: 221 83% 53%;
 }
 
 .dark {
@@ -62,6 +77,21 @@
   --border: 217 19% 27%;
   --input: 217 19% 27%;
   --ring: 224 76% 48%;
+
+  /* Cards — mid surface between main bg (11%) and sidebar (16%) */
+  --card: 222 35% 13.5%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 217 19% 20%;
+
+  /* Sidebar — slightly lighter than dark background */
+  --sidebar: 222 35% 16%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 217 19% 20%;
+  --sidebar-accent: 217 19% 18%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 222 47% 11%;
+  --sidebar-ring: 224 76% 48%;
 }
 
 @layer base {
@@ -166,6 +196,20 @@ button:not(:disabled)::after {
 }
 button:not(:disabled):active::after {
   animation: ripple-out 0.45s ease-out;
+}
+
+/* Slow down select/dropdown open-close animation */
+[data-state="open"][class*="animate-in"],
+[data-state="closed"][class*="animate-out"] {
+  animation-duration: 200ms !important;
+}
+
+/* Subtle grey surface behind dashboard content */
+.dashboard-surface {
+  background-color: hsl(var(--muted) / 0.35);
+}
+.dark .dashboard-surface {
+  background-color: hsl(220 20% 8%);
 }
 
 /* Scrollbar Styling */
