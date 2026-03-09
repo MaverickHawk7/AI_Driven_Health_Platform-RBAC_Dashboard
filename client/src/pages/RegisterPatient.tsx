@@ -40,8 +40,8 @@ const preRegSchema = z.object({
 type PreRegValues = z.infer<typeof preRegSchema>;
 
 const formSchema = insertPatientSchema.extend({
-  ageMonths: z.coerce.number().min(1, "Age in months is required (must be at least 1)").max(72, "Age must be 72 months or less"),
-  contactNumber: z.string().optional(),
+  ageMonths: z.coerce.number().min(0, "Age cannot be negative").max(80, "Age must be 80 months or less"),
+  contactNumber: z.string().optional().refine(v => !v || /^[+\d\s\-()]*$/.test(v), "Only numbers, +, -, spaces and () allowed"),
   name: z.string().min(1, "Name is required").max(255, "Name is too long"),
   caregiverName: z.string().min(1, "Caregiver name is required").max(255, "Name is too long"),
 });
@@ -323,7 +323,7 @@ export default function RegisterPatient() {
                       <FormItem>
                         <FormLabel><T>Age (Months)</T></FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 12" {...field} />
+                          <Input type="number" placeholder="e.g. 12" min={0} max={80} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -358,7 +358,7 @@ export default function RegisterPatient() {
                       <FormItem>
                         <FormLabel><T>Contact Number</T></FormLabel>
                         <FormControl>
-                          <Input placeholder="+1 234 567 8900" {...field} value={field.value || ''} />
+                          <Input placeholder="+91 98765 43210" inputMode="tel" {...field} value={field.value || ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
