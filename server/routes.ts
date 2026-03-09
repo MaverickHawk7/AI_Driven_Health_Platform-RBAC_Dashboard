@@ -1728,6 +1728,22 @@ async function seedDatabase() {
     }
   }
 
+  // Ensure all demo role accounts exist
+  const demoAccounts = [
+    { username: "dwcweo", password: "password", name: "DW&CW&EO Officer Ramesh", role: "dwcweo", assignedDistrict: "Visakhapatnam" },
+    { username: "higher official", password: "password", name: "State Director Sunita", role: "higher_official" },
+    { username: "cdpo", password: "password", name: "CDPO Officer Priya", role: "cdpo", assignedBlock: "Block-A" },
+    { username: "supervisor", password: "password", name: "Supervisor John", role: "supervisor" },
+    { username: "admin", password: "password", name: "System Admin", role: "admin" },
+  ];
+  for (const acct of demoAccounts) {
+    const existing = await storage.getUserByUsername(acct.username);
+    if (!existing) {
+      await storage.createUser(acct as any);
+      console.log(`[seed] Created missing demo account: ${acct.username}`);
+    }
+  }
+
   if (allUsers.length === 0) {
     // Create multiple centers for the cluster
     const center1 = await storage.createCenter({
