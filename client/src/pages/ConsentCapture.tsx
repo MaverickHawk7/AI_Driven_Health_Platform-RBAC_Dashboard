@@ -97,7 +97,7 @@ export default function ConsentCapture({ patientId, patientName, onComplete, onB
       <div className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <ShieldCheck className="w-6 h-6 text-primary" />
-          Patient Consent
+          Guardian Consent
         </h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Record consent for <strong>{patientName}</strong> before proceeding with screening.
@@ -124,7 +124,7 @@ export default function ConsentCapture({ patientId, patientName, onComplete, onB
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="guardianName">Full Name (Patient or Guardian)</Label>
+            <Label htmlFor="guardianName">Full Name (Parent or Guardian)</Label>
             <Input
               id="guardianName"
               placeholder="Enter full name"

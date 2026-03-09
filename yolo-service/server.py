@@ -2,12 +2,15 @@
 
 import base64
 import io
+import os
 import sys
+import uuid
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from posthog import Posthog
 from pydantic import BaseModel
 
 from config import (
@@ -19,6 +22,14 @@ from config import (
     INCONCLUSIVE_MIN_CLASSES,
     MODEL_PATH,
     PORT,
+)
+
+# ── PostHog ─────────────────────────────────────────────────────────────────
+
+posthog_client = Posthog(
+    api_key=os.environ.get("POSTHOG_API_KEY", ""),
+    host=os.environ.get("POSTHOG_HOST", "https://eu.i.posthog.com"),
+    enable_exception_autocapture=True,
 )
 
 
@@ -50,6 +61,7 @@ def _load_model():
 async def lifespan(app: FastAPI):
     _load_model()
     yield
+    posthog_client.flush()
 
 
 # ── App ────────────────────────────────────────────────────────────────────
@@ -138,7 +150,19 @@ async def health():
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(req: PredictRequest):
+    request_id = str(uuid.uuid4())
+    posthog_client.capture(
+        "yolo-service",
+        "prediction requested",
+        properties={"request_id": request_id, "$process_person_profile": False},
+    )
+
     if not _model_loaded or _model is None:
+        posthog_client.capture(
+            "yolo-service",
+            "model unavailable",
+            properties={"request_id": request_id, "$process_person_profile": False},
+        )
         raise HTTPException(
             status_code=503,
             detail="Model not loaded. Place a trained model at "
@@ -150,6 +174,11 @@ async def predict(req: PredictRequest):
         raw_b64 = _strip_data_uri(req.image)
         image_bytes = base64.b64decode(raw_b64)
     except Exception as e:
+        posthog_client.capture(
+            "yolo-service",
+            "image decode failed",
+            properties={"request_id": request_id, "$process_person_profile": False},
+        )
         raise HTTPException(status_code=400, detail=f"Invalid base64 image: {e}")
 
     # Run YOLO inference
@@ -158,6 +187,11 @@ async def predict(req: PredictRequest):
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         results = _model(img, conf=CONFIDENCE_THRESHOLD, verbose=False)
     except Exception as e:
+        posthog_client.capture(
+            "yolo-service",
+            "prediction failed",
+            properties={"request_id": request_id, "$process_person_profile": False},
+        )
         raise HTTPException(status_code=500, detail=f"Inference failed: {e}")
 
     # Parse detections
@@ -193,6 +227,18 @@ async def predict(req: PredictRequest):
     indicators = [CLASS_LABELS[name] for name in detected_classes]
 
     explanation = _build_explanation(status, indicators, confidence)
+
+    posthog_client.capture(
+        "yolo-service",
+        "prediction completed",
+        properties={
+            "request_id": request_id,
+            "prediction_status": status,
+            "confidence": confidence,
+            "indicator_count": len(indicators),
+            "$process_person_profile": False,
+        },
+    )
 
     return PredictResponse(
         status=status,

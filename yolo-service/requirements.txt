@@ -3,3 +3,4 @@ fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
 Pillow>=9.0.0
 python-multipart>=0.0.5
+posthog>=3.0.0
