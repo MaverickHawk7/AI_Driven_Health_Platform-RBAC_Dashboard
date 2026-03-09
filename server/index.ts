@@ -22,7 +22,17 @@ declare module "http" {
 }
 
 app.use(helmet({
-  contentSecurityPolicy: isProd ? undefined : false, // no CSP in dev (HMR)
+  contentSecurityPolicy: isProd ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://eu-assets.i.posthog.com"],
+      connectSrc: ["'self'", "https://eu.i.posthog.com", "https://eu-assets.i.posthog.com", "wss:", "ws:"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", "data:"],
+      workerSrc: ["'self'", "blob:"],
+    },
+  } : false, // no CSP in dev (HMR)
 }));
 
 app.use(compression());
