@@ -24,6 +24,15 @@ const REDIRECT_MAP: Record<Role, string> = {
   admin: "/admin",
 };
 
+const DEMO_CREDENTIALS: Record<Role, { username: string; password: string }> = {
+  field_worker: { username: "field worker", password: "password" },
+  supervisor: { username: "supervisor", password: "password" },
+  cdpo: { username: "cdpo", password: "password" },
+  dwcweo: { username: "dwcweo", password: "password" },
+  higher_official: { username: "higher official", password: "password" },
+  admin: { username: "admin", password: "password" },
+};
+
 export default function Login() {
   const { login, user } = useAuth();
   const [, setLocation] = useLocation();
@@ -58,6 +67,10 @@ export default function Login() {
 
   return (
     <div className="login-bg-pattern min-h-screen w-full flex items-center justify-center p-4 relative">
+      {/* Desktop mode notice */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white text-center text-xs py-1.5 font-medium md:hidden">
+        For best experience view in desktop mode
+      </div>
       {/* Language selector - top right */}
       <div className="absolute top-4 right-4 z-10">
         <Select value={lang} onValueChange={(v) => setLang(v as "en" | "te")}>
@@ -82,7 +95,15 @@ export default function Login() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="login-role">{t("Select Role")}</Label>
-              <Select onValueChange={(v) => setLoginRole(v as Role)} value={loginRole}>
+              <Select onValueChange={(v) => {
+                const role = v as Role;
+                setLoginRole(role);
+                const creds = DEMO_CREDENTIALS[role];
+                if (creds) {
+                  setLoginUsername(creds.username);
+                  setLoginPassword(creds.password);
+                }
+              }} value={loginRole}>
                 <SelectTrigger id="login-role" className="h-11 bg-background">
                   <SelectValue placeholder={t("Select your role")} />
                 </SelectTrigger>

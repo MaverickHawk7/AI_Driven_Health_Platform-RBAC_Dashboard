@@ -29,3 +29,33 @@ export const DISTRICTS = [
 ] as const;
 
 export type District = typeof DISTRICTS[number];
+
+// Blocks (Mandals) per district in Andhra Pradesh
+export const BLOCKS_BY_DISTRICT: Record<string, string[]> = {
+  "Alluri Sitharama Raju": ["Chintapalli", "Paderu", "Araku Valley", "Hukumpeta", "Maredumilli", "Rampachodavaram", "Addateegala", "G.K. Veedhi", "Ananthagiri", "Koyyuru"],
+  "Anakapalli": ["Anakapalli", "Chodavaram", "Narsipatnam", "Madugula", "Yelamanchili", "Makavarapalem", "K.Kotapadu", "Rambilli", "Munagapaka", "Devarapalli"],
+  "Anantapur": ["Anantapur", "Dharmavaram", "Kadiri", "Rayadurg", "Gooty", "Uravakonda", "Pamidi", "Kalyanadurgam", "Guntakal", "Tadipatri"],
+  "Annamayya": ["Rayachoti", "Rajampet", "Lakkireddipalle", "Madanapalle", "Pileru", "Pullampeta", "Chinnamandem", "Kambhamvaripalle", "Galiveedu", "Vontimitta"],
+  "Bapatla": ["Bapatla", "Chirala", "Addanki", "Repalle", "Martur", "Parchur", "Yeddanapudi", "Karlapalem", "Bhattiprolu", "Pittalavanipalem"],
+  "Chittoor": ["Chittoor", "Punganur", "Palamaner", "Kuppam", "Nagari", "Puthalapattu", "Gudipala", "Vayalpadu", "Gangadhara Nellore", "Penumuru"],
+  "East Godavari": ["Rajahmundry", "Pithapuram", "Ramachandrapuram", "Prathipadu", "Jaggampeta", "Korukonda", "Gandepalli", "Rajanagaram", "Seethanagaram", "Gokavaram"],
+  "Eluru": ["Eluru", "Chintalapudi", "Jangareddygudem", "Nidadavole", "Denduluru", "Polavaram", "Buttayagudem", "Dwaraka Tirumala", "Kamavarapukota", "Lingapalem"],
+  "Guntur": ["Guntur", "Tenali", "Mangalagiri", "Prathipadu", "Ponnur", "Pedakakani", "Tadikonda", "Chebrolu", "Duggirala", "Kollipara"],
+  "Kakinada": ["Kakinada", "Peddapuram", "Gollaprolu", "Samalkot", "Tuni", "Prathipadu", "Thallarevu", "Karapa", "Kirlampudi", "Gandepalli"],
+  "Konaseema": ["Amalapuram", "Razole", "Mandapeta", "Mummidivaram", "P.Gannavaram", "Kothapeta", "Allavaram", "Uppalaguptam", "Katrenikona", "Malikipuram"],
+  "Krishna": ["Machilipatnam", "Gudivada", "Vuyyuru", "Avanigadda", "Kaikalur", "Pedana", "Bantumilli", "Challapalli", "Ghantasala", "Guduru"],
+  "Kurnool": ["Kurnool", "Adoni", "Yemmiganur", "Mantralayam", "Kodumur", "C.Belagal", "Gonegandla", "Halaharvi", "Holagunda", "Kosigi"],
+  "Nandyal": ["Nandyal", "Atmakur", "Banaganapalle", "Allagadda", "Dhone", "Nandikotkur", "Mahanandi", "Bethamcherla", "Panyam", "Srisailam"],
+  "NTR": ["Vijayawada", "Jaggayyapeta", "Tiruvuru", "Nandigama", "Mylavaram", "Nuzvid", "Gannavaram", "Vatsavai", "Chandarlapadu", "Kanchikacherla"],
+  "Palnadu": ["Narasaraopet", "Macherla", "Gurazala", "Piduguralla", "Sattenapalli", "Vinukonda", "Dachepalli", "Karempudi", "Rentachintala", "Bollapalli"],
+  "Parvathipuram Manyam": ["Parvathipuram", "Palakonda", "Salur", "Bobbili", "Rajam", "Seethanagaram", "Kurupam", "Jiyyammavalasa", "Makkuva", "Garugubilli"],
+  "Prakasam": ["Ongole", "Markapuram", "Kandukur", "Giddalur", "Darsi", "Podili", "Singarayakonda", "Yerragondapalem", "Cumbum", "Kanigiri"],
+  "Sri Potti Sriramulu Nellore": ["Nellore", "Kavali", "Atmakur", "Gudur", "Kovur", "Sullurpeta", "Venkatagiri", "Udayagiri", "Buchireddipalem", "Podalakur"],
+  "Sri Sathya Sai": ["Puttaparthi", "Penukonda", "Madakasira", "Hindupur", "Bukkapatnam", "Amarapuram", "Roddam", "Kothacheruvu", "Nallamada", "Bathalapalli"],
+  "Srikakulam": ["Srikakulam", "Tekkali", "Palasa", "Amadalavalasa", "Narasannapeta", "Ichapuram", "Pathapatnam", "Etcherla", "Rajam", "Laveru"],
+  "Tirupati": ["Tirupati", "Srikalahasti", "Puttur", "Chandragiri", "Renigunta", "Yerpedu", "Pakala", "Vadamalapeta", "Satyavedu", "Nagalapuram"],
+  "Visakhapatnam": ["Visakhapatnam", "Bheemunipatnam", "Pendurthi", "Gajuwaka", "Gopalapatnam", "Padmanabham", "Anandapuram", "Sabbavaram", "Pedagantyada", "Maharanipeta"],
+  "Vizianagaram": ["Vizianagaram", "Nellimarla", "Bhogapuram", "Gajapathinagaram", "Srungavarapukota", "Cheepurupalli", "Dattirajeru", "Gantyada", "Pusapatirega", "Vepada"],
+  "West Godavari": ["Bhimavaram", "Narasapuram", "Tadepalligudem", "Palacole", "Akividu", "Undi", "Narsapuram", "Mogalturu", "Iragavaram", "Penugonda"],
+  "YSR Kadapa": ["Kadapa", "Proddatur", "Jammalamadugu", "Pulivendula", "Mydukur", "Badvel", "Kamalapuram", "Rajupalem", "Duvvur", "Yerraguntla"],
+};

@@ -1,8 +1,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPatientSchema } from "@shared/schema";
-import { DISTRICTS } from "@shared/constants";
-import { useCreatePatient, useCenters } from "@/hooks/use-resources";
+import { DISTRICTS, BLOCKS_BY_DISTRICT } from "@shared/constants";
+import { useCreatePatient } from "@/hooks/use-resources";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
 import { useLocation } from "wouter";
@@ -58,8 +58,6 @@ export default function RegisterPatient() {
   const [step, setStep] = useState<"pre-reg" | "details">("pre-reg");
   const [preRegData, setPreRegData] = useState<PreRegValues | null>(null);
 
-  const { data: centers } = useCenters();
-
   const uniqueDistricts = DISTRICTS;
 
   const preRegForm = useForm<PreRegValues>({
@@ -70,9 +68,9 @@ export default function RegisterPatient() {
   const selectedDistrict = preRegForm.watch("district");
 
   const blocksForDistrict = useMemo(() => {
-    if (!centers || !selectedDistrict) return [];
-    return Array.from(new Set(centers.filter(c => c.district === selectedDistrict).map(c => c.block))).sort();
-  }, [centers, selectedDistrict]);
+    if (!selectedDistrict) return [];
+    return BLOCKS_BY_DISTRICT[selectedDistrict] || [];
+  }, [selectedDistrict]);
 
   function onPreRegSubmit(values: PreRegValues) {
     setPreRegData(values);
