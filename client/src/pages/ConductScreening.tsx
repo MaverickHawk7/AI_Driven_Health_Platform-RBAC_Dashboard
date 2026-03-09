@@ -498,7 +498,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                   {t(question.text)}
                 </FormLabel>
                 <Badge className={`text-[10px] shrink-0 ${DOMAIN_COLORS[question.domain] || "bg-gray-100 text-gray-700"}`}>
-                  {question.domain}
+                  {t(question.domain)}
                 </Badge>
               </div>
               <FormControl>
@@ -511,13 +511,13 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                     <FormControl>
                       <RadioGroupItem value="yes" />
                     </FormControl>
-                    <FormLabel className="font-normal"><T>Yes</T></FormLabel>
+                    <FormLabel className="font-normal">{t("Yes")}</FormLabel>
                   </FormItem>
                   <FormItem className="flex items-center space-x-2 space-y-0">
                     <FormControl>
                       <RadioGroupItem value="no" />
                     </FormControl>
-                    <FormLabel className="font-normal"><T>No</T></FormLabel>
+                    <FormLabel className="font-normal">{t("No")}</FormLabel>
                   </FormItem>
                 </RadioGroup>
               </FormControl>
@@ -708,7 +708,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                       return (
                         <div key={domain} className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{domain}</span>
+                            <span className="font-medium">{t(domain)}</span>
                             <span className="text-muted-foreground">{concerning}/{total} flagged</span>
                           </div>
                           <Progress value={pct} className={`h-2 ${pct >= 60 ? "[&>div]:bg-red-500" : pct >= 30 ? "[&>div]:bg-amber-500" : "[&>div]:bg-green-500"}`} />
