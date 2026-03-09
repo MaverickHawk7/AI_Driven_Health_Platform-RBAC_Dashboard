@@ -178,14 +178,14 @@ export default function Login() {
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <HeartPulse className="w-6 h-6 text-primary" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">ICDS Health Platform</span>
+              <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase">AI Enabled Health Platform</span>
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground mb-3">
               {t("Intelligent Early Age")} <br />
               <span className="text-primary">{t("Health Monitoring & Screening")}</span>
             </h1>
             <p className="text-muted-foreground">
-              {t("Intelligent child health screening, risk detection, and intervention tracking for ICDS field operations.")}
+              {t("Intelligent health screening, risk detection, and intervention tracking for ICDS field operations.")}
             </p>
           </div>
 
