@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import posthog from 'posthog-js';
 import type { SafeUser } from '@shared/schema';
 
 interface AuthContextType {
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/me"], data);
+      posthog.identify(String(data.id), { name: data.name, role: data.role });
     },
   });
 
@@ -51,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!res.ok) throw new Error("Logout failed");
     },
     onSuccess: () => {
+      posthog.reset();
       queryClient.setQueryData(["/api/me"], null);
       queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== "/api/me" });
     },
