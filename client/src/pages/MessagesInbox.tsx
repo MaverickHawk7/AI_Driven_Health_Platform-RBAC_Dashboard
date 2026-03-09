@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   MessageSquare, Send, Inbox, CheckCircle2,
-  Plus, ArrowRight,
+  Plus,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import type { Message } from "@shared/schema";
@@ -430,10 +430,9 @@ export default function MessagesInbox() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
-                    <span className="font-medium text-foreground">{getUserName(selectedMessage.senderId)}</span>
-                    <ArrowRight className="w-3 h-3" />
-                    <span className="font-medium text-foreground">{getUserName(selectedMessage.recipientId)}</span>
+                  <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                    <p>From: <span className="font-medium text-foreground">{getUserName(selectedMessage.senderId)}</span></p>
+                    <p>To: <span className="font-medium text-foreground">{getUserName(selectedMessage.recipientId)}</span></p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
