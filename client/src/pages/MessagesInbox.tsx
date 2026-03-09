@@ -16,8 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  MessageSquare, Send, Inbox, CheckCircle2, Clock, AlertCircle,
-  Plus, ArrowRight, Calendar, User,
+  MessageSquare, Send, Inbox, CheckCircle2,
+  Plus, ArrowRight,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import type { Message } from "@shared/schema";
@@ -98,12 +98,16 @@ export default function MessagesInbox() {
       return allUsers.filter((u: any) => u.id !== user.id);
     }
     if (user.role === "supervisor") {
-      // Assignments map supervisor → center; find field workers in those centers
+      // Field workers in assigned centers + CDPOs + other supervisors
       const myCenterIds = allAssignments
         .filter((a: any) => a.supervisorId === user.id)
         .map((a: any) => a.centerId);
       return allUsers.filter((u: any) =>
-        u.id !== user.id && u.role === "field_worker" && myCenterIds.includes(u.centerId)
+        u.id !== user.id && (
+          (u.role === "field_worker" && myCenterIds.includes(u.centerId)) ||
+          u.role === "cdpo" ||
+          u.role === "supervisor"
+        )
       );
     }
     if (user.role === "field_worker") {
@@ -172,9 +176,11 @@ export default function MessagesInbox() {
         key={msg.id}
         className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${isSelected ? "bg-muted/70" : ""} ${msg.status === "unread" ? "bg-primary/5" : ""}`}
         onClick={() => {
-          setSelectedMessage(msg);
           if (msg.status === "unread" && msg.recipientId === user.id) {
             markAsRead(msg.id);
+            setSelectedMessage({ ...msg, status: "read" });
+          } else {
+            setSelectedMessage(msg);
           }
         }}
       >
@@ -398,52 +404,39 @@ export default function MessagesInbox() {
         {/* Message Detail */}
         <div className="lg:col-span-1">
           <Card className="sticky top-8">
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {selectedMessage ? "Message Detail" : "Select a message"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedMessage ? (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold">{selectedMessage.subject}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className={`text-[10px] ${priorityColors[selectedMessage.priority]}`}>
-                        {selectedMessage.priority}
-                      </Badge>
-                      <Badge className={`text-[10px] ${statusColors[selectedMessage.status]}`}>
-                        {statusLabels[selectedMessage.status]}
-                      </Badge>
-                      {selectedMessage.type === "task" && (
-                        <Badge variant="outline" className="text-[10px]">Task</Badge>
+            {selectedMessage ? (
+              <>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        {selectedMessage.type === "task" && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 shrink-0">Task</Badge>
+                        )}
+                        <Badge variant="outline" className={`text-[10px] shrink-0 ${priorityColors[selectedMessage.priority]}`}>
+                          {selectedMessage.priority}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-base leading-snug">{selectedMessage.subject}</CardTitle>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[11px] text-muted-foreground">
+                        {selectedMessage.createdAt ? format(new Date(selectedMessage.createdAt), "MMM d, h:mm a") : ""}
+                      </p>
+                      {selectedMessage.dueDate && (
+                        <p className={`text-[11px] mt-0.5 ${new Date(selectedMessage.dueDate) < new Date() && selectedMessage.status !== "completed" ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                          Due {format(new Date(selectedMessage.dueDate), "MMM d")}
+                        </p>
                       )}
                     </div>
                   </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <User className="w-3.5 h-3.5" />
-                      <span>From: {getUserName(selectedMessage.senderId)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <ArrowRight className="w-3.5 h-3.5" />
-                      <span>To: {getUserName(selectedMessage.recipientId)}</span>
-                    </div>
-                    {selectedMessage.createdAt && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{format(new Date(selectedMessage.createdAt), "PPp")}</span>
-                      </div>
-                    )}
-                    {selectedMessage.dueDate && (
-                      <div className={`flex items-center gap-2 ${new Date(selectedMessage.dueDate) < new Date() && selectedMessage.status !== "completed" ? "text-destructive" : "text-muted-foreground"}`}>
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Due: {format(new Date(selectedMessage.dueDate), "PP")}</span>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2">
+                    <span className="font-medium text-foreground">{getUserName(selectedMessage.senderId)}</span>
+                    <ArrowRight className="w-3 h-3" />
+                    <span className="font-medium text-foreground">{getUserName(selectedMessage.recipientId)}</span>
                   </div>
-
+                </CardHeader>
+                <CardContent className="space-y-4">
                   {selectedMessage.body && (
                     <div className="p-3 bg-muted/50 rounded-md text-sm whitespace-pre-wrap">
                       {selectedMessage.body}
@@ -479,14 +472,16 @@ export default function MessagesInbox() {
                       Completed {format(new Date(selectedMessage.completedAt), "PPp")}
                     </p>
                   )}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
+                </CardContent>
+              </>
+            ) : (
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">Click on a message to view details.</p>
                 </div>
-              )}
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>
