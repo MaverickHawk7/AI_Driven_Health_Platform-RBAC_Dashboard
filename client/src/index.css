@@ -177,11 +177,11 @@
   0% { transform: translate(-50%, -50%) scale(0); opacity: 0.35; }
   100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
 }
-button:not(:disabled) {
+button:not(:disabled):not(.theme-toggle) {
   position: relative;
   overflow: hidden;
 }
-button:not(:disabled)::after {
+button:not(:disabled):not(.theme-toggle)::after {
   content: '';
   position: absolute;
   width: 100%;
@@ -194,7 +194,7 @@ button:not(:disabled)::after {
   left: var(--ripple-x, 50%);
   transform: translate(-50%, -50%) scale(0);
 }
-button:not(:disabled):active::after {
+button:not(:disabled):not(.theme-toggle):active::after {
   animation: ripple-out 0.45s ease-out;
 }
 
@@ -206,16 +206,23 @@ html.theme-transition *::after {
   transition: background-color 0.3s ease, color 0.25s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 html.theme-transition .theme-toggle {
-  transition: background-color 0.5s ease 0.15s, color 0.5s ease 0.15s, border-color 0.5s ease 0.15s !important;
+  transition: background-color 0.585s ease 0.18s, color 0.585s ease 0.18s, border-color 0.585s ease 0.18s !important;
 }
 
-/* Theme toggle icon spin */
-@keyframes icon-spin-in {
-  0% { transform: rotate(-90deg) scale(0.5); opacity: 0; }
-  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+/* Theme toggle icon — light→dark: center outward, dark→light: around inward */
+@keyframes icon-center-out {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes icon-around-in {
+  0% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 .theme-icon {
-  animation: icon-spin-in 0.4s ease-out;
+  animation: icon-center-out 0.315s ease-out;
+}
+.dark .theme-icon {
+  animation: icon-around-in 0.315s ease-in-out;
 }
 
 
