@@ -24,12 +24,15 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
  * On 429 or empty response, the next model in the list is attempted.
  */
 const MODEL_ROTATION = [
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
   "google/gemma-3-27b-it:free",
-  "google/gemma-3-12b-it:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
-  "google/gemma-3-4b-it:free",
-  "nvidia/nemotron-nano-12b-v2:free",
-  "deepseek/deepseek-r1-0528:free",
+  "google/gemma-3-12b-it:free",
+  "nvidia/nemotron-nano-9b-v2:free",
+  "qwen/qwen3-4b:free",
+  "openai/gpt-oss-20b:free",
+  "stepfun/step-3.5-flash:free",
 ];
 
 export interface LLMCallOptions {
@@ -85,7 +88,8 @@ export async function callLLM(
   const lastErrors: string[] = [];
 
   for (const model of modelsToTry) {
-    const isReasoningModel = model.includes("gpt-oss") || model.includes("deepseek-r1") || model.includes("nemotron");
+    const isReasoningModel = model.includes("gpt-oss") || model.includes("deepseek-r1") || model.includes("nemotron") || model.includes("qwen3");
+    const supportsJsonMode = !model.includes("hermes") && !model.includes("stepfun");
 
     const body: Record<string, unknown> = {
       model,
@@ -97,8 +101,10 @@ export async function callLLM(
       max_tokens: isReasoningModel ? Math.max(maxTokens, 4096) : maxTokens,
     };
 
-    // response_format JSON mode — supported by most models
-    body.response_format = { type: "json_object" };
+    // response_format JSON mode — not all models support it
+    if (supportsJsonMode) {
+      body.response_format = { type: "json_object" };
+    }
 
     // Reasoning models need a budget cap so output tokens aren't consumed by CoT
     if (isReasoningModel) {
@@ -188,24 +194,21 @@ export async function callLLM(
 const VISION_MODEL_ROTATION = [
   "google/gemma-3-27b-it:free",
   "google/gemma-3-12b-it:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
-  "google/gemma-3-4b-it:free",
   "nvidia/nemotron-nano-12b-v2-vl:free",
-  "qwen/qwen2.5-vl-72b-instruct:free",
-  "qwen/qwen2.5-vl-32b-instruct:free",
-  "deepseek/deepseek-r1-0528:free",
+  "google/gemma-3n-e4b-it:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
 ];
 
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 /** Max retries on 429 before moving to next model */
-const RATE_LIMIT_RETRIES = 2;
+const RATE_LIMIT_RETRIES = 3;
 /** Wait time in ms before retrying after a 429 */
-const RATE_LIMIT_WAIT_MS = 3_000;
+const RATE_LIMIT_WAIT_MS = 4_000;
 /** Max models to try before giving up (try all available) */
-const MAX_MODELS_TO_TRY = 6;
+const MAX_MODELS_TO_TRY = 9;
 /** Per-request timeout in ms */
-const FETCH_TIMEOUT_MS = 20_000;
+const FETCH_TIMEOUT_MS = 25_000;
 
 export interface VisionLLMCallOptions {
   model?: string;

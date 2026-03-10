@@ -228,10 +228,19 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
   const displayRiskScore = riskScore ?? 65;
 
   const flaggedDomains = answers
-    ? Object.entries(answers).map(([qId, answer]) => ({
-        name: DOMAIN_MAP[qId] ?? qId,
-        ...answerToStatus(answer, qId),
-      }))
+    ? (() => {
+        const STATUS_PRIORITY: Record<string, number> = { "At Risk": 2, "Monitor": 1, "Normal": 0 };
+        const domainMap = new Map<string, { status: string; icon: typeof Info }>();
+        for (const [qId, answer] of Object.entries(answers)) {
+          const name = DOMAIN_MAP[qId] ?? qId;
+          const { status, icon } = answerToStatus(answer, qId);
+          const existing = domainMap.get(name);
+          if (!existing || (STATUS_PRIORITY[status] ?? 0) > (STATUS_PRIORITY[existing.status] ?? 0)) {
+            domainMap.set(name, { status, icon });
+          }
+        }
+        return Array.from(domainMap.entries()).map(([name, { status, icon }]) => ({ name, status, icon }));
+      })()
     : [
         { name: "Communication",   status: "Monitor",  icon: Info         },
         { name: "Social Interaction", status: "Normal", icon: CheckCircle2 },

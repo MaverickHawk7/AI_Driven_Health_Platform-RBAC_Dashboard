@@ -79,6 +79,10 @@ export default function InterventionPlanView() {
     updatePlan({ id: planId, status: "active" });
   }
 
+  function handleCompletePlan(planId: number) {
+    updatePlan({ id: planId, status: "completed" });
+  }
+
   const domainColors: Record<string, string> = {
     speech: "bg-purple-100 text-purple-700",
     social: "bg-blue-100 text-blue-700",
@@ -90,7 +94,7 @@ export default function InterventionPlanView() {
   const statusColors: Record<string, string> = {
     recommended: "bg-yellow-100 text-yellow-700",
     active: "bg-green-100 text-green-700",
-    completed: "bg-gray-100 text-gray-700",
+    completed: "bg-green-100 text-green-700",
     discontinued: "bg-red-100 text-red-700",
   };
 
@@ -130,7 +134,7 @@ export default function InterventionPlanView() {
         const intensity = getIntensityFromScore(plan.riskScore ?? (plan.status === "active" ? 50 : undefined));
 
         return (
-          <Card key={plan.id} className="border-2">
+          <Card key={plan.id} className={`border-2 ${plan.status === "completed" ? "border-green-400 bg-green-50/30 dark:bg-green-950/20" : ""}`}>
             <CardHeader>
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -161,6 +165,18 @@ export default function InterventionPlanView() {
                       <Play className="w-3.5 h-3.5" />
                       Activate
                     </Button>
+                  )}
+                  {plan.status === "active" && isSupervisor && !caregiverMode && (
+                    <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white" onClick={() => handleCompletePlan(plan.id)}>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Mark Complete
+                    </Button>
+                  )}
+                  {plan.status === "completed" && !caregiverMode && (
+                    <Badge className="bg-green-600 text-white gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Completed
+                    </Badge>
                   )}
                 </div>
               </div>
