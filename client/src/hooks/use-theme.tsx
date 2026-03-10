@@ -26,8 +26,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const setTheme = useCallback((t: Theme) => {
+    document.documentElement.classList.add("theme-transition");
     setThemeState(t);
     try { localStorage.setItem("app_theme", t); } catch {}
+    setTimeout(() => document.documentElement.classList.remove("theme-transition"), 350);
   }, []);
 
   const toggleTheme = useCallback(() => {

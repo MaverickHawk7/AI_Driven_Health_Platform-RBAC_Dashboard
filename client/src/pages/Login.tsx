@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   User, ClipboardList, ShieldCheck, Mail, Lock, MapPin, Building2, Globe,
-  Brain, Zap, Shield, Activity, FileText, HeartPulse, Languages,
+  Brain, Zap, Shield, Activity, FileText, HeartPulse, Languages, Sun, Moon,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
+import { useTheme } from "@/hooks/use-theme";
 
 type Role = "field_worker" | "supervisor" | "cdpo" | "dwcweo" | "higher_official" | "admin";
 
@@ -38,6 +39,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { t, setLang, lang } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const [loginRole, setLoginRole] = useState<Role | "">("");
   const [loginUsername, setLoginUsername] = useState("");
@@ -71,8 +73,19 @@ export default function Login() {
       <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white text-center text-xs py-1.5 font-medium md:hidden">
         For best experience view in desktop mode
       </div>
-      {/* Language selector - top right */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Theme toggle + Language selector - top right */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle h-9 w-9 flex items-center justify-center rounded-md border bg-background/80 backdrop-blur text-foreground/70 hover:text-foreground"
+          aria-label="Toggle theme"
+        >
+          {theme === "light" ? (
+            <Moon className="w-4 h-4 theme-icon" />
+          ) : (
+            <Sun className="w-4 h-4 theme-icon" />
+          )}
+        </button>
         <Select value={lang} onValueChange={(v) => setLang(v as "en" | "te")}>
           <SelectTrigger className="w-[140px] h-9 bg-background/80 backdrop-blur border text-sm font-medium">
             <Languages className="w-4 h-4 mr-1.5 shrink-0" />
@@ -104,7 +117,10 @@ export default function Login() {
                   setLoginPassword(creds.password);
                 }
               }} value={loginRole}>
-                <SelectTrigger id="login-role" className="h-11 bg-background">
+                <SelectTrigger
+                  id="login-role"
+                  className="h-11 bg-background"
+                >
                   <SelectValue placeholder={t("Select your role")} />
                 </SelectTrigger>
                 <SelectContent className="bg-background">

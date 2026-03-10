@@ -198,6 +198,27 @@ button:not(:disabled):active::after {
   animation: ripple-out 0.45s ease-out;
 }
 
+/* Smooth theme transition */
+html.theme-transition,
+html.theme-transition *:not(.theme-toggle),
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.3s ease, color 0.25s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+html.theme-transition .theme-toggle {
+  transition: background-color 0.5s ease 0.15s, color 0.5s ease 0.15s, border-color 0.5s ease 0.15s !important;
+}
+
+/* Theme toggle icon spin */
+@keyframes icon-spin-in {
+  0% { transform: rotate(-90deg) scale(0.5); opacity: 0; }
+  100% { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+.theme-icon {
+  animation: icon-spin-in 0.4s ease-out;
+}
+
+
 /* Slow down select/dropdown open-close animation */
 [data-state="open"][class*="animate-in"],
 [data-state="closed"][class*="animate-out"] {
