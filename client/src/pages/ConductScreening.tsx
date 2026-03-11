@@ -213,7 +213,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   const { mutate: generatePlans } = useGenerateInterventionPlan();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [result, setResult] = useState<{ riskLevel: string; riskScore: number; answers: Record<string, string>; source: "yolo" | "ai" | "fallback"; explanation: string; domainScores?: Record<string, number> | null; domainAssessments?: Array<{ domain: string; status: string; insight: string }> | null } | null>(null);
+  const [result, setResult] = useState<{ riskLevel: string; riskScore: number; answers: Record<string, string>; source: "yolo" | "ai" | "fallback"; explanation: string; domainScores?: Record<string, number> | null; domainAssessments?: Array<{ domain: string; status: string; insight: string }> | null; conditionIndicators?: Array<{ condition: string; confidence: number; ruleBasedConfidence: number; aiConfidence: number; referral: string; caregiverMessage: string }> | null } | null>(null);
   const [showPhotoStep, setShowPhotoStep] = useState(false);
   const [photoResult, setPhotoResult] = useState<PhotoAnalysisResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
@@ -310,16 +310,18 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
       screeningType: form.getValues().screeningType,
     }, {
       onSuccess: (data) => {
+        const resp = data as any;
         setResult({
-          riskLevel: data.riskLevel || "Low",
-          riskScore: data.riskScore || 0,
+          riskLevel: resp.riskLevel || "Low",
+          riskScore: resp.riskScore || 0,
           answers: answersMap,
-          source: data.source ?? "fallback",
-          explanation: data.explanation ?? "",
-          domainScores: data.domainScores as Record<string, number> | null,
-          domainAssessments: data.domainAssessments ?? null,
+          source: resp.source ?? "fallback",
+          explanation: resp.explanation ?? "",
+          domainScores: resp.domainScores as Record<string, number> | null,
+          domainAssessments: resp.domainAssessments ?? null,
+          conditionIndicators: resp.conditionIndicators ?? null,
         });
-        setAssessmentId(data.id.toString());
+        setAssessmentId(resp.id.toString());
 
         const hasPhotoConsent = photoConsentStatus?.hasConsent;
         if (hasPhotoConsent) {
@@ -461,6 +463,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
           patientId={selectedPatientId}
           domainScores={result.domainScores}
           domainAssessments={result.domainAssessments}
+          conditionIndicators={result.conditionIndicators}
         />
       </div>
     );

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Info, ArrowLeft, BrainCircuit, Calculator, ClipboardList, Camera, FileText, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Target } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, ArrowLeft, BrainCircuit, Calculator, ClipboardList, Camera, FileText, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Target, ShieldAlert } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { usePatientPrediction } from "@/hooks/use-resources";
 import { CaregiverToggle, ReadAloudButton, useCaregiverMode } from "@/components/CaregiverMode";
@@ -21,6 +21,15 @@ interface AIDomainAssessment {
   insight: string;
 }
 
+interface ConditionIndicator {
+  condition: string;
+  confidence: number;
+  ruleBasedConfidence: number;
+  aiConfidence: number;
+  referral: string;
+  caregiverMessage: string;
+}
+
 interface AIResultsProps {
   assessmentId?: string;
   onComplete?: () => void;
@@ -33,6 +42,7 @@ interface AIResultsProps {
   patientId?: number;
   domainScores?: Record<string, number> | null;
   domainAssessments?: AIDomainAssessment[] | null;
+  conditionIndicators?: ConditionIndicator[] | null;
 }
 
 // Legacy domain mapping (old q1-q5 screenings)
@@ -220,7 +230,7 @@ function getDomainScoreLabel(score: number): string {
   return "Low Risk";
 }
 
-export default function AIResults({ assessmentId: propId, onComplete, riskScore, riskLevel, explanation, answers, source, photoAnalysis, patientId, domainScores, domainAssessments }: AIResultsProps) {
+export default function AIResults({ assessmentId: propId, onComplete, riskScore, riskLevel, explanation, answers, source, photoAnalysis, patientId, domainScores, domainAssessments, conditionIndicators }: AIResultsProps) {
   const [, setLocation] = useLocation();
   const params = useParams();
   const id = propId || params.id;
@@ -454,6 +464,82 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
                 Higher scores indicate greater risk. Green &lt;40 | Amber 40-74 | Red &ge;75
               </p>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pattern Analysis — Combined Rule-Based + AI */}
+      {conditionIndicators && conditionIndicators.length > 0 && (
+        <Card className="border-2 border-purple-200 bg-purple-50/30 dark:bg-purple-950/20 dark:border-purple-800">
+          <CardHeader>
+            <CardTitle className={`${caregiverMode ? "text-xl" : "text-lg"} flex items-center gap-2`}>
+              <ShieldAlert className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              {caregiverMode ? "What the Screening Found" : "Developmental Pattern Analysis"}
+              <Badge variant="outline" className="text-xs ml-auto font-normal">
+                Rule-Based + AI
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {conditionIndicators.map((indicator) => {
+              const confidenceColor = indicator.confidence >= 60
+                ? "bg-red-500" : indicator.confidence >= 40
+                ? "bg-amber-500" : "bg-yellow-400";
+              const confidenceBg = indicator.confidence >= 60
+                ? "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800"
+                : indicator.confidence >= 40
+                ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+                : "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800";
+
+              return (
+                <div key={indicator.condition} className={`p-4 rounded-lg border ${confidenceBg}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-sm">{indicator.condition}</span>
+                    <span className="text-sm font-mono font-bold">
+                      {indicator.confidence}%
+                    </span>
+                  </div>
+
+                  {/* Confidence bar */}
+                  <div className="w-full h-2.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mb-2">
+                    <div
+                      className={`h-full rounded-full transition-all ${confidenceColor}`}
+                      style={{ width: `${Math.min(100, indicator.confidence)}%` }}
+                    />
+                  </div>
+
+                  {/* Source breakdown */}
+                  {!caregiverMode && (
+                    <div className="flex gap-4 text-xs text-muted-foreground mb-3">
+                      <span>Rule-based: {indicator.ruleBasedConfidence}%</span>
+                      <span>AI: {indicator.aiConfidence}%</span>
+                    </div>
+                  )}
+
+                  {/* Referral / Caregiver message */}
+                  {caregiverMode ? (
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm leading-relaxed">{indicator.caregiverMessage}</p>
+                      <ReadAloudButton text={indicator.caregiverMessage} />
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Suggested Referral</p>
+                      <p className="text-sm leading-relaxed">{indicator.referral}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Guardrail disclaimer */}
+            <div className="p-3 rounded-lg bg-purple-100/60 border border-purple-200 dark:bg-purple-900/30 dark:border-purple-700">
+              <p className="text-xs text-purple-800 dark:text-purple-300">
+                <strong>Important:</strong> This is a <strong>screening indicator</strong>, not a diagnosis.
+                Confidence scores reflect pattern matching from questionnaire responses only.
+                A qualified specialist must evaluate the child before any clinical determination is made.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

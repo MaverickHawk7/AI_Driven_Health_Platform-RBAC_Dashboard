@@ -22,12 +22,22 @@ export interface DomainAssessment {
   insight: string;
 }
 
+export interface ConditionIndicator {
+  condition: string;
+  confidence: number; // 0-100 combined (avg of rule-based + AI)
+  ruleBasedConfidence: number;
+  aiConfidence: number;
+  referral: string;
+  caregiverMessage: string;
+}
+
 export interface RiskResult {
   riskScore: number;
   riskLevel: "Low" | "Medium" | "High";
   explanation: string;
   source: "ai" | "fallback";
   domainAssessments?: DomainAssessment[];
+  conditionIndicators?: ConditionIndicator[];
 }
 
 // Legacy 5-question screening
@@ -262,6 +272,264 @@ function legacyFallbackRisk(
 }
 
 
+// ── Rule-based pattern detection ─────────────────────────────────────────
+
+interface DomainScoreMap {
+  communication: number;
+  socialInteraction: number;
+  jointAttention: number;
+  playBehavior: number;
+  repetitiveBehavior: number;
+  sensorySensitivity: number;
+  emotionalRegulation: number;
+}
+
+function computeDomainConcernRatios(
+  questions: ScreeningQuestion[],
+  answers: ScreeningAnswers
+): DomainScoreMap {
+  const domainKey: Record<string, keyof DomainScoreMap> = {
+    "Communication": "communication",
+    "Social Interaction": "socialInteraction",
+    "Joint Attention": "jointAttention",
+    "Play Behavior": "playBehavior",
+    "Repetitive Behavior": "repetitiveBehavior",
+    "Sensory Sensitivity": "sensorySensitivity",
+    "Emotional Regulation": "emotionalRegulation",
+  };
+
+  const counts: Record<keyof DomainScoreMap, { total: number; concerning: number }> = {
+    communication: { total: 0, concerning: 0 },
+    socialInteraction: { total: 0, concerning: 0 },
+    jointAttention: { total: 0, concerning: 0 },
+    playBehavior: { total: 0, concerning: 0 },
+    repetitiveBehavior: { total: 0, concerning: 0 },
+    sensorySensitivity: { total: 0, concerning: 0 },
+    emotionalRegulation: { total: 0, concerning: 0 },
+  };
+
+  for (const q of questions) {
+    const answer = (answers[q.id] ?? "").toLowerCase();
+    if (!answer) continue;
+    const key = domainKey[q.category];
+    if (!key) continue;
+    counts[key].total++;
+    const concerning = q.reversed ? (answer === "yes") : (answer === "no");
+    if (concerning) counts[key].concerning++;
+  }
+
+  const result = {} as DomainScoreMap;
+  for (const [key, { total, concerning }] of Object.entries(counts)) {
+    (result as any)[key] = total > 0 ? Math.round((concerning / total) * 100) : 0;
+  }
+  return result;
+}
+
+const CONDITION_REFERRALS: Record<string, { referral: string; caregiverMessage: string }> = {
+  "Autism Spectrum Indicators": {
+    referral: "Developmental Pediatrician or District Early Intervention Center (DEIC). RBSK team evaluation recommended within 2 weeks.",
+    caregiverMessage: "Your child's screening shows some areas that need a specialist's attention. This is not a diagnosis — it means we want to check further so your child gets the best support early. Please visit the referred center.",
+  },
+  "Speech/Language Delay": {
+    referral: "Speech-Language Pathologist. ENT evaluation to rule out hearing impairment. Reassess in 4-6 weeks.",
+    caregiverMessage: "Your child may need some extra help with talking and understanding words. A speech specialist can guide you with simple activities. This is very common and early help makes a big difference.",
+  },
+  "Global Developmental Delay": {
+    referral: "Developmental Pediatrician for comprehensive assessment. District Hospital Pediatrics department.",
+    caregiverMessage: "Your child may need a little more time to reach some milestones. A doctor can check and suggest activities to help. Many children catch up well with early support.",
+  },
+  "Sensory Processing Concerns": {
+    referral: "Occupational Therapist for sensory evaluation. Pediatric neurology if severe.",
+    caregiverMessage: "Your child seems very sensitive to certain sounds or textures. A specialist can help you understand what bothers your child and how to make things more comfortable.",
+  },
+  "Behavioral/Emotional Concerns": {
+    referral: "Child Psychologist or Behavioral Therapist. PHC referral for further evaluation.",
+    caregiverMessage: "Your child may have big emotions that are hard to manage. This is something that can be helped with the right guidance. A specialist can show you calming techniques.",
+  },
+};
+
+function ruleBasedPatternDetection(
+  questions: ScreeningQuestion[],
+  answers: ScreeningAnswers
+): ConditionIndicator[] {
+  const d = computeDomainConcernRatios(questions, answers);
+  const indicators: ConditionIndicator[] = [];
+
+  // Autism: Joint Attention + Social Interaction + Repetitive Behavior cluster
+  const autismScore = Math.round(
+    (d.jointAttention * 0.35) + (d.socialInteraction * 0.30) +
+    (d.repetitiveBehavior * 0.20) + (d.communication * 0.10) +
+    (d.sensorySensitivity * 0.05)
+  );
+  if (autismScore >= 30) {
+    const ref = CONDITION_REFERRALS["Autism Spectrum Indicators"];
+    indicators.push({
+      condition: "Autism Spectrum Indicators",
+      ruleBasedConfidence: Math.min(100, autismScore),
+      aiConfidence: 0,
+      confidence: 0,
+      ...ref,
+    });
+  }
+
+  // Speech/Language Delay: Communication high, Social normal
+  if (d.communication >= 50 && d.socialInteraction < 40 && d.jointAttention < 50) {
+    const score = Math.round(d.communication * 0.7 + (100 - d.socialInteraction) * 0.15 + (100 - d.jointAttention) * 0.15);
+    const ref = CONDITION_REFERRALS["Speech/Language Delay"];
+    indicators.push({
+      condition: "Speech/Language Delay",
+      ruleBasedConfidence: Math.min(100, score),
+      aiConfidence: 0,
+      confidence: 0,
+      ...ref,
+    });
+  }
+
+  // Global Developmental Delay: Multiple domains moderately elevated
+  const moderateCount = [d.communication, d.socialInteraction, d.jointAttention, d.playBehavior, d.repetitiveBehavior].filter(s => s >= 40).length;
+  if (moderateCount >= 3) {
+    const avg = Math.round([d.communication, d.socialInteraction, d.jointAttention, d.playBehavior, d.repetitiveBehavior].reduce((a, b) => a + b, 0) / 5);
+    const ref = CONDITION_REFERRALS["Global Developmental Delay"];
+    indicators.push({
+      condition: "Global Developmental Delay",
+      ruleBasedConfidence: Math.min(100, avg),
+      aiConfidence: 0,
+      confidence: 0,
+      ...ref,
+    });
+  }
+
+  // Sensory Processing: Sensory high, others relatively normal
+  if (d.sensorySensitivity >= 60) {
+    const ref = CONDITION_REFERRALS["Sensory Processing Concerns"];
+    indicators.push({
+      condition: "Sensory Processing Concerns",
+      ruleBasedConfidence: Math.min(100, d.sensorySensitivity),
+      aiConfidence: 0,
+      confidence: 0,
+      ...ref,
+    });
+  }
+
+  // Behavioral/Emotional: Emotional Regulation high + Repetitive, Social normal
+  if (d.emotionalRegulation >= 50 && d.socialInteraction < 40) {
+    const score = Math.round(d.emotionalRegulation * 0.6 + d.repetitiveBehavior * 0.4);
+    const ref = CONDITION_REFERRALS["Behavioral/Emotional Concerns"];
+    indicators.push({
+      condition: "Behavioral/Emotional Concerns",
+      ruleBasedConfidence: Math.min(100, score),
+      aiConfidence: 0,
+      confidence: 0,
+      ...ref,
+    });
+  }
+
+  return indicators;
+}
+
+// ── AI condition prompt (second pass) ───────────────────────────────────
+
+const CONDITION_PROMPT = `\
+You are a JSON API. You output ONLY raw JSON — never explain, never reason, never use markdown.
+
+Given developmental screening answers, analyze whether the pattern of responses suggests any of these conditions. Consider ALL answers holistically across Tier 1 and Tier 2.
+
+Conditions to evaluate:
+1. "Autism Spectrum Indicators" — joint attention + social interaction + repetitive behavior cluster
+2. "Speech/Language Delay" — communication concerns with relatively normal social skills
+3. "Global Developmental Delay" — broad moderate concerns across many domains
+4. "Sensory Processing Concerns" — heightened sensory sensitivity
+5. "Behavioral/Emotional Concerns" — emotional dysregulation, behavioral difficulties
+
+RESPOND WITH EXACTLY THIS JSON (nothing else):
+{"conditions":[{"condition":"NAME","confidence":NUMBER,"reasoning":"SHORT_TEXT"}]}
+
+Where:
+- condition = exact condition name from the list above
+- confidence = 0-100 (how strongly the answers suggest this condition)
+- reasoning = max 20 words explaining why
+
+Only include conditions with confidence >= 25. If no conditions are suggested, return {"conditions":[]}.
+
+IMPORTANT: This is a SCREENING indicator, not a diagnosis. Base confidence on the PATTERN of domain responses, not just individual answers.`;
+
+interface AICondition {
+  condition: string;
+  confidence: number;
+  reasoning: string;
+}
+
+function parseConditionResult(raw: string): AICondition[] {
+  try {
+    const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      const match = cleaned.match(/\{[\s\S]*"conditions"\s*:\s*\[[\s\S]*\][\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+    }
+    if (!parsed?.conditions || !Array.isArray(parsed.conditions)) return [];
+    return parsed.conditions
+      .filter((c: any) => c && typeof c.condition === "string" && typeof c.confidence === "number")
+      .map((c: any) => ({
+        condition: c.condition,
+        confidence: Math.max(0, Math.min(100, Math.round(c.confidence))),
+        reasoning: typeof c.reasoning === "string" ? c.reasoning.slice(0, 200) : "",
+      }));
+  } catch {
+    console.warn("[riskAnalyzer] Failed to parse AI condition analysis");
+    return [];
+  }
+}
+
+function combineIndicators(
+  ruleBased: ConditionIndicator[],
+  aiConditions: AICondition[]
+): ConditionIndicator[] {
+  // Build map of all conditions from both sources
+  const conditionMap = new Map<string, ConditionIndicator>();
+
+  // Start with rule-based
+  for (const rb of ruleBased) {
+    conditionMap.set(rb.condition, { ...rb });
+  }
+
+  // Merge AI confidence
+  for (const ai of aiConditions) {
+    const existing = conditionMap.get(ai.condition);
+    if (existing) {
+      existing.aiConfidence = ai.confidence;
+      existing.confidence = Math.round((existing.ruleBasedConfidence + ai.confidence) / 2);
+    } else if (ai.confidence >= 30) {
+      // AI found something rule-based didn't
+      const ref = CONDITION_REFERRALS[ai.condition];
+      if (ref) {
+        conditionMap.set(ai.condition, {
+          condition: ai.condition,
+          ruleBasedConfidence: 0,
+          aiConfidence: ai.confidence,
+          confidence: Math.round(ai.confidence / 2), // halved since no rule-based support
+          ...ref,
+        });
+      }
+    }
+  }
+
+  // For rule-based only (AI didn't weigh in), confidence = ruleBasedConfidence * 0.7
+  const allIndicators = Array.from(conditionMap.values());
+  for (const indicator of allIndicators) {
+    if (indicator.aiConfidence === 0 && indicator.ruleBasedConfidence > 0) {
+      indicator.confidence = Math.round(indicator.ruleBasedConfidence * 0.7);
+    }
+  }
+
+  // Filter out low confidence and sort by confidence desc
+  return allIndicators
+    .filter(c => c.confidence >= 20)
+    .sort((a, b) => b.confidence - a.confidence);
+}
+
 export async function analyzeScreening(
   answers: ScreeningAnswers
 ): Promise<RiskResult> {
@@ -274,34 +542,84 @@ export async function analyzeScreening(
 
   const userMessage = buildUserMessage(questions, answers);
 
+  let result: RiskResult;
+
   // 1. Try Ollama (local LLM) first
+  let aiAvailable = false;
   try {
     const ollamaReady = await isOllamaAvailable();
     if (ollamaReady) {
       console.log("[riskAnalyzer] Ollama available — using local LLM for analysis");
       const { content, model } = await callOllamaLLM(SYSTEM_PROMPT, userMessage);
-      const result = parseRiskResult(content);
+      result = parseRiskResult(content);
+      aiAvailable = true;
       console.log(`[riskAnalyzer] AI result via ${model}: score=${result.riskScore} level=${result.riskLevel}`);
-      return result;
+    } else {
+      console.log("[riskAnalyzer] Ollama not available, trying OpenRouter...");
     }
-    console.log("[riskAnalyzer] Ollama not available, trying OpenRouter...");
   } catch (ollamaErr) {
     console.warn("[riskAnalyzer] Ollama call failed, falling back to OpenRouter:", ollamaErr);
   }
 
   // 2. Fallback to OpenRouter
-  try {
-    const { content, model } = await callLLM(SYSTEM_PROMPT, userMessage);
-    const result = parseRiskResult(content);
-    console.log(`[riskAnalyzer] AI result via ${model}: score=${result.riskScore} level=${result.riskLevel}`);
-    return result;
-  } catch (openRouterErr) {
-    console.warn("[riskAnalyzer] OpenRouter call failed, using rule-based fallback:", openRouterErr);
+  if (!aiAvailable) {
+    try {
+      const { content, model } = await callLLM(SYSTEM_PROMPT, userMessage);
+      result = parseRiskResult(content);
+      aiAvailable = true;
+      console.log(`[riskAnalyzer] AI result via ${model}: score=${result.riskScore} level=${result.riskLevel}`);
+    } catch (openRouterErr) {
+      console.warn("[riskAnalyzer] OpenRouter call failed, using rule-based fallback:", openRouterErr);
+    }
   }
 
   // 3. Deterministic rule-based fallback
-  if (isNewFormat) {
-    return mchatFallbackRisk(questions, answers);
+  if (!aiAvailable) {
+    result = isNewFormat
+      ? mchatFallbackRisk(questions, answers)
+      : legacyFallbackRisk(LEGACY_QUESTIONS, answers);
   }
-  return legacyFallbackRisk(LEGACY_QUESTIONS, answers);
+
+  // 4. Pattern detection (only for M-CHAT-R/F format)
+  if (isNewFormat) {
+    const ruleBasedIndicators = ruleBasedPatternDetection(questions, answers);
+    console.log(`[riskAnalyzer] Rule-based pattern detection found ${ruleBasedIndicators.length} indicators`);
+
+    // Second AI pass for condition analysis
+    let aiConditions: AICondition[] = [];
+    if (aiAvailable) {
+      try {
+        const conditionMessage = buildUserMessage(questions, answers);
+        let conditionContent: string | undefined;
+
+        // Try Ollama first, then OpenRouter
+        try {
+          const ollamaReady = await isOllamaAvailable();
+          if (ollamaReady) {
+            const { content } = await callOllamaLLM(CONDITION_PROMPT, conditionMessage);
+            conditionContent = content;
+          }
+        } catch { /* fall through */ }
+
+        if (!conditionContent) {
+          const { content } = await callLLM(CONDITION_PROMPT, conditionMessage);
+          conditionContent = content;
+        }
+
+        aiConditions = parseConditionResult(conditionContent);
+        console.log(`[riskAnalyzer] AI condition analysis found ${aiConditions.length} conditions`);
+      } catch (err) {
+        console.warn("[riskAnalyzer] AI condition analysis failed, using rule-based only:", err);
+      }
+    }
+
+    // Combine rule-based + AI confidence scores
+    const conditionIndicators = combineIndicators(ruleBasedIndicators, aiConditions);
+    if (conditionIndicators.length > 0) {
+      result!.conditionIndicators = conditionIndicators;
+      console.log(`[riskAnalyzer] Combined indicators: ${conditionIndicators.map(c => `${c.condition}(${c.confidence}%)`).join(", ")}`);
+    }
+  }
+
+  return result!;
 }
