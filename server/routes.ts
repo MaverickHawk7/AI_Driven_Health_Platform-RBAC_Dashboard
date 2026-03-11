@@ -436,7 +436,7 @@ export async function registerRoutes(
       }
 
       const answers = input.answers as Record<string, string>;
-      const { riskScore, riskLevel, explanation, source } = await analyzeScreening(answers);
+      const { riskScore, riskLevel, explanation, source, domainAssessments } = await analyzeScreening(answers);
 
       const domainScores = computeDomainScores(answers);
 
@@ -484,7 +484,7 @@ export async function registerRoutes(
       // Invalidate affected caches
       invalidateCache("stats", "patients:*", "alerts:counts", "reports:*").catch(() => {});
 
-      res.status(201).json({ ...screening, source, explanation });
+      res.status(201).json({ ...screening, source, explanation, domainAssessments });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });

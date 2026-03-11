@@ -16,11 +16,18 @@ export type AnswerValue = "yes" | "no" | "sometimes";
 
 export type ScreeningAnswers = Record<string, AnswerValue | string>;
 
+export interface DomainAssessment {
+  domain: string;
+  status: "At Risk" | "Monitor" | "Normal";
+  insight: string;
+}
+
 export interface RiskResult {
   riskScore: number;
   riskLevel: "Low" | "Medium" | "High";
   explanation: string;
   source: "ai" | "fallback";
+  domainAssessments?: DomainAssessment[];
 }
 
 // Legacy 5-question screening
@@ -71,15 +78,21 @@ const TIER2_QUESTIONS: ScreeningQuestion[] = [
 const SYSTEM_PROMPT = `\
 You are a JSON API. You output ONLY raw JSON — never explain, never reason, never use markdown.
 
-Your task: score a developmental screening based on M-CHAT-R/F methodology.
+Your task: score a developmental screening based on M-CHAT-R/F methodology, providing both an overall score AND per-domain combined assessments.
+
+IMPORTANT: Questions are grouped by domain (e.g., Communication, Social Interaction). Multiple questions may test the same domain across Tier 1 and Tier 2. You MUST analyze ALL answers within a domain TOGETHER and provide ONE combined assessment per domain. If Tier 1 flags a concern but Tier 2 clears it, the domain should be "Monitor" not "At Risk".
 
 RESPOND WITH EXACTLY THIS JSON FORMAT (nothing else):
-{"riskScore":NUMBER,"riskLevel":"LEVEL","explanation":"SHORT_TEXT"}
+{"riskScore":NUMBER,"riskLevel":"LEVEL","explanation":"SHORT_TEXT","domainAssessments":[{"domain":"NAME","status":"STATUS","insight":"TEXT"}]}
 
 Where:
 - riskScore = integer 0-100
 - riskLevel = "Low" (0-40) or "Medium" (41-74) or "High" (75-100)
 - explanation = max 20 words summarizing key concerns
+- domainAssessments = one entry per domain present in the screening:
+  - domain = exact domain name (Communication, Social Interaction, Joint Attention, Play Behavior, Repetitive Behavior, Sensory Sensitivity, Emotional Regulation)
+  - status = "At Risk" (majority concerning), "Monitor" (mixed results), or "Normal" (no concerns)
+  - insight = max 15 words explaining the combined finding for this domain
 
 Scoring methodology:
 - Count "concerning" answers (for positive behavior questions: "no" is concerning; for negative behavior questions like repetitive movements or sensory sensitivity: "yes" is concerning)
@@ -139,7 +152,7 @@ function parseRiskResult(raw: string): RiskResult {
     );
   }
 
-  const raw_ = parsed as { riskScore: number; riskLevel: string; explanation: string };
+  const raw_ = parsed as { riskScore: number; riskLevel: string; explanation: string; domainAssessments?: unknown[] };
   const riskScore = Math.max(0, Math.min(100, Math.round(raw_.riskScore)));
 
   let riskLevel: RiskResult["riskLevel"];
@@ -154,10 +167,25 @@ function parseRiskResult(raw: string): RiskResult {
     riskLevel = "Low";
   }
 
+  // Parse domain assessments if present
+  let domainAssessments: DomainAssessment[] | undefined;
+  if (Array.isArray(raw_.domainAssessments) && raw_.domainAssessments.length > 0) {
+    const validStatuses = new Set(["At Risk", "Monitor", "Normal"]);
+    domainAssessments = raw_.domainAssessments
+      .filter((d: any) => d && typeof d.domain === "string" && typeof d.status === "string")
+      .map((d: any) => ({
+        domain: d.domain,
+        status: validStatuses.has(d.status) ? d.status : "Monitor",
+        insight: typeof d.insight === "string" ? d.insight.slice(0, 200) : "",
+      })) as DomainAssessment[];
+    if (domainAssessments.length === 0) domainAssessments = undefined;
+  }
+
   return {
     riskScore,
     riskLevel,
     explanation: raw_.explanation.slice(0, 300),
+    domainAssessments,
     source: "ai" as const,
   };
 }

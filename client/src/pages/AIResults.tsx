@@ -15,6 +15,12 @@ interface PhotoAnalysis {
   source: "yolo" | "ai" | "fallback";
 }
 
+interface AIDomainAssessment {
+  domain: string;
+  status: string;
+  insight: string;
+}
+
 interface AIResultsProps {
   assessmentId?: string;
   onComplete?: () => void;
@@ -26,6 +32,7 @@ interface AIResultsProps {
   photoAnalysis?: PhotoAnalysis | null;
   patientId?: number;
   domainScores?: Record<string, number> | null;
+  domainAssessments?: AIDomainAssessment[] | null;
 }
 
 // Legacy domain mapping (old q1-q5 screenings)
@@ -213,7 +220,7 @@ function getDomainScoreLabel(score: number): string {
   return "Low Risk";
 }
 
-export default function AIResults({ assessmentId: propId, onComplete, riskScore, riskLevel, explanation, answers, source, photoAnalysis, patientId, domainScores }: AIResultsProps) {
+export default function AIResults({ assessmentId: propId, onComplete, riskScore, riskLevel, explanation, answers, source, photoAnalysis, patientId, domainScores, domainAssessments }: AIResultsProps) {
   const [, setLocation] = useLocation();
   const params = useParams();
   const id = propId || params.id;
@@ -227,26 +234,39 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
   const displayRiskLevel = riskLevel ?? "Medium";
   const displayRiskScore = riskScore ?? 65;
 
-  const flaggedDomains = answers
+  const flaggedDomains = domainAssessments && domainAssessments.length > 0
+    ? // Use AI-provided combined domain assessments
+      domainAssessments.map((d) => ({
+        name: d.domain,
+        status: d.status === "At Risk" || d.status === "Monitor" || d.status === "Normal" ? d.status : "Monitor",
+        icon: d.status === "At Risk" ? AlertCircle : d.status === "Monitor" ? Info : CheckCircle2,
+        insight: d.insight,
+      }))
+    : answers
     ? (() => {
-        const STATUS_PRIORITY: Record<string, number> = { "At Risk": 2, "Monitor": 1, "Normal": 0 };
-        const domainMap = new Map<string, { status: string; icon: typeof Info }>();
+        // Fallback: group answers by domain, compute combined status from ratio
+        const domainAnswers = new Map<string, { total: number; concerning: number }>();
         for (const [qId, answer] of Object.entries(answers)) {
           const name = DOMAIN_MAP[qId] ?? qId;
-          const { status, icon } = answerToStatus(answer, qId);
-          const existing = domainMap.get(name);
-          if (!existing || (STATUS_PRIORITY[status] ?? 0) > (STATUS_PRIORITY[existing.status] ?? 0)) {
-            domainMap.set(name, { status, icon });
-          }
+          const { status } = answerToStatus(answer, qId);
+          const entry = domainAnswers.get(name) || { total: 0, concerning: 0 };
+          entry.total++;
+          if (status === "At Risk") entry.concerning++;
+          domainAnswers.set(name, entry);
         }
-        return Array.from(domainMap.entries()).map(([name, { status, icon }]) => ({ name, status, icon }));
+        return Array.from(domainAnswers.entries()).map(([name, { total, concerning }]) => {
+          const ratio = concerning / total;
+          const status = ratio > 0.5 ? "At Risk" : ratio > 0 ? "Monitor" : "Normal";
+          const icon = status === "At Risk" ? AlertCircle : status === "Monitor" ? Info : CheckCircle2;
+          return { name, status, icon, insight: "" };
+        });
       })()
     : [
-        { name: "Communication",   status: "Monitor",  icon: Info         },
-        { name: "Social Interaction", status: "Normal", icon: CheckCircle2 },
-        { name: "Joint Attention", status: "At Risk",   icon: AlertCircle  },
-        { name: "Play Behavior",   status: "Normal",   icon: CheckCircle2 },
-        { name: "Repetitive Behavior", status: "Normal", icon: CheckCircle2 },
+        { name: "Communication",   status: "Monitor",  icon: Info,         insight: "" },
+        { name: "Social Interaction", status: "Normal", icon: CheckCircle2, insight: "" },
+        { name: "Joint Attention", status: "At Risk",   icon: AlertCircle,  insight: "" },
+        { name: "Play Behavior",   status: "Normal",   icon: CheckCircle2, insight: "" },
+        { name: "Repetitive Behavior", status: "Normal", icon: CheckCircle2, insight: "" },
       ];
 
   const recommendation = explanation?.trim()
@@ -356,8 +376,13 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
                       onClick={() => domain.status !== "Normal" && interventionInfo && setExpandedDomain(isExpanded ? null : domain.name)}
                     >
                       <div className="flex items-center gap-3">
-                        <domain.icon className={`w-5 h-5 ${domain.status === 'At Risk' ? 'text-red-500' : domain.status === 'Monitor' ? 'text-amber-500' : 'text-green-500'}`} />
-                        <span className={`font-medium ${caregiverMode ? "text-base" : ""}`}>{domain.name}</span>
+                        <domain.icon className={`w-5 h-5 shrink-0 ${domain.status === 'At Risk' ? 'text-red-500' : domain.status === 'Monitor' ? 'text-amber-500' : 'text-green-500'}`} />
+                        <div>
+                          <span className={`font-medium ${caregiverMode ? "text-base" : ""}`}>{domain.name}</span>
+                          {(domain as any).insight && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{(domain as any).insight}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={domain.status === 'Normal' ? 'secondary' : 'default'} className={

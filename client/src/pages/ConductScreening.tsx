@@ -213,7 +213,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   const { mutate: generatePlans } = useGenerateInterventionPlan();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [result, setResult] = useState<{ riskLevel: string; riskScore: number; answers: Record<string, string>; source: "yolo" | "ai" | "fallback"; explanation: string; domainScores?: Record<string, number> | null } | null>(null);
+  const [result, setResult] = useState<{ riskLevel: string; riskScore: number; answers: Record<string, string>; source: "yolo" | "ai" | "fallback"; explanation: string; domainScores?: Record<string, number> | null; domainAssessments?: Array<{ domain: string; status: string; insight: string }> | null } | null>(null);
   const [showPhotoStep, setShowPhotoStep] = useState(false);
   const [photoResult, setPhotoResult] = useState<PhotoAnalysisResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
@@ -317,6 +317,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
           source: data.source ?? "fallback",
           explanation: data.explanation ?? "",
           domainScores: data.domainScores as Record<string, number> | null,
+          domainAssessments: data.domainAssessments ?? null,
         });
         setAssessmentId(data.id.toString());
 
@@ -459,6 +460,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
           photoAnalysis={photoResult}
           patientId={selectedPatientId}
           domainScores={result.domainScores}
+          domainAssessments={result.domainAssessments}
         />
       </div>
     );
