@@ -328,7 +328,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
       answers: answersMap,
       conductedByUserId: user?.id,
       screeningType: form.getValues().screeningType,
-      behaviourConcerns: behaviourConcerns.length > 0 ? behaviourConcerns : undefined,
+      behaviourConcerns: behaviourConcerns.length > 0 ? behaviourConcerns.join(",") : undefined,
     } as any, {
       onSuccess: (data) => {
         const resp = data as any;
