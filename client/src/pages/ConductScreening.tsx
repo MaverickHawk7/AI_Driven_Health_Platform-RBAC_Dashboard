@@ -1,6 +1,7 @@
 import AIResults from "./AIResults";
 import PhotoCapture, { type PhotoAnalysisResult } from "@/components/PhotoCapture";
 import ConsentCapture from "./ConsentCapture";
+import NutritionAssessmentForm from "@/components/NutritionAssessmentForm";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -34,7 +35,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, AlertTriangle, AlertCircle, Camera, ClipboardList, FileCheck, ShieldAlert, ArrowRight } from "lucide-react";
+import { CheckCircle2, AlertTriangle, AlertCircle, Camera, ClipboardList, FileCheck, ShieldAlert, ArrowRight, Apple, Brain } from "lucide-react";
 import { T, useLanguage } from "@/hooks/use-language";
 
 // --- Two-Tier M-CHAT-R/F Inspired Questions ---
@@ -108,10 +109,20 @@ function isConcerning(answer: string, reversed: boolean): boolean {
 
 const STEPS = [
   { label: "Patient & Consent", icon: FileCheck },
+  { label: "Nutrition", icon: Apple },
   { label: "Tier 1 Screening", icon: ClipboardList },
   { label: "Follow-up", icon: ShieldAlert },
+  { label: "Behaviour", icon: Brain },
   { label: "Photo", icon: Camera },
   { label: "Results", icon: CheckCircle2 },
+];
+
+const BEHAVIOUR_OPTIONS = [
+  { id: "sleep", label: "Sleep Issues", points: 3 },
+  { id: "aggression", label: "Aggression", points: 4 },
+  { id: "feeding", label: "Feeding Difficulties", points: 2 },
+  { id: "tantrums", label: "Frequent Tantrums", points: 3 },
+  { id: "other", label: "Other Concerns", points: 2 },
 ];
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
@@ -213,7 +224,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   const { mutate: generatePlans } = useGenerateInterventionPlan();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [result, setResult] = useState<{ riskLevel: string; riskScore: number; answers: Record<string, string>; source: "yolo" | "ai" | "fallback"; explanation: string; domainScores?: Record<string, number> | null; domainAssessments?: Array<{ domain: string; status: string; insight: string }> | null; conditionIndicators?: Array<{ condition: string; confidence: number; ruleBasedConfidence: number; aiConfidence: number; referral: string; caregiverMessage: string }> | null } | null>(null);
+  const [result, setResult] = useState<{ riskLevel: string; riskScore: number; answers: Record<string, string>; source: "yolo" | "ai" | "fallback"; explanation: string; domainScores?: Record<string, number> | null; domainAssessments?: Array<{ domain: string; status: string; insight: string }> | null; conditionIndicators?: Array<{ condition: string; confidence: number; ruleBasedConfidence: number; aiConfidence: number; referral: string; caregiverMessage: string }> | null; formulaRiskScore?: number | null; formulaRiskCategory?: string | null; behaviourScore?: number | null; behaviourRiskLevel?: string | null; autismRisk?: string | null; adhdRisk?: string | null; developmentalStatus?: string | null } | null>(null);
   const [showPhotoStep, setShowPhotoStep] = useState(false);
   const [photoResult, setPhotoResult] = useState<PhotoAnalysisResult | null>(null);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
@@ -221,6 +232,15 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   const [selectedPatientId, setSelectedPatientId] = useState<number | undefined>(propPatientId);
   const [showConsent, setShowConsent] = useState(false);
   const [consentCompleted, setConsentCompleted] = useState(false);
+
+  // Nutrition step
+  const [showNutrition, setShowNutrition] = useState(false);
+  const [nutritionData, setNutritionData] = useState<any>(null);
+
+  // Behaviour step
+  const [showBehaviour, setShowBehaviour] = useState(false);
+  const [behaviourConcerns, setBehaviourConcerns] = useState<string[]>([]);
+  const [behaviourDone, setBehaviourDone] = useState(false);
 
   // Two-tier state
   const [currentTier, setCurrentTier] = useState<1 | 2>(1);
@@ -308,7 +328,8 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
       answers: answersMap,
       conductedByUserId: user?.id,
       screeningType: form.getValues().screeningType,
-    }, {
+      behaviourConcerns: behaviourConcerns.length > 0 ? behaviourConcerns : undefined,
+    } as any, {
       onSuccess: (data) => {
         const resp = data as any;
         setResult({
@@ -320,6 +341,13 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
           domainScores: resp.domainScores as Record<string, number> | null,
           domainAssessments: resp.domainAssessments ?? null,
           conditionIndicators: resp.conditionIndicators ?? null,
+          formulaRiskScore: resp.formulaRiskScore ?? null,
+          formulaRiskCategory: resp.formulaRiskCategory ?? null,
+          behaviourScore: resp.behaviourScore ?? null,
+          behaviourRiskLevel: resp.behaviourRiskLevel ?? null,
+          autismRisk: resp.autismRisk ?? null,
+          adhdRisk: resp.adhdRisk ?? null,
+          developmentalStatus: resp.developmentalStatus ?? null,
         });
         setAssessmentId(resp.id.toString());
 
@@ -375,10 +403,23 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
       });
       return;
     }
-    submitScreening();
+    setShowBehaviour(true);
   }
 
   function handleLowRiskSubmit() {
+    setShowBehaviour(true);
+  }
+
+  function handleBehaviourDone() {
+    setBehaviourDone(true);
+    setShowBehaviour(false);
+    submitScreening();
+  }
+
+  function handleBehaviourSkip() {
+    setBehaviourConcerns([]);
+    setBehaviourDone(true);
+    setShowBehaviour(false);
     submitScreening();
   }
 
@@ -406,7 +447,92 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   }, [currentTier, form.watch()]);
 
   const hasConsent = consentStatus?.hasConsent || consentCompleted;
-  const currentStep = result && !showPhotoStep ? 4 : result && showPhotoStep ? 3 : currentTier === 2 ? 2 : showConsent ? 0 : 1;
+  // Steps: 0=Patient/Consent, 1=Nutrition, 2=Tier1, 3=Follow-up(Tier2), 4=Behaviour, 5=Photo, 6=Results
+  const currentStep = result && !showPhotoStep ? 6 : result && showPhotoStep ? 5 : showBehaviour ? 4 : currentTier === 2 ? 3 : showNutrition ? 1 : (selectedPatientId && hasConsent ? 2 : 0);
+
+  // --- Behaviour Step ---
+  if (showBehaviour) {
+    const behaviourScore = behaviourConcerns.reduce((sum, c) => {
+      const opt = BEHAVIOUR_OPTIONS.find(o => o.id === c);
+      return sum + (opt?.points ?? 2);
+    }, 0);
+    const behaviourRisk = behaviourScore > 10 ? "High" : behaviourScore >= 6 ? "Medium" : "Low";
+    return (
+      <div className="max-w-2xl mx-auto py-6 px-4">
+        <StepIndicator currentStep={4} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-purple-600" />
+              <T>Behaviour Checklist</T>
+            </CardTitle>
+            <CardDescription>
+              <T>Quick checklist of behavioural concerns. Takes less than 1 minute.</T>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              <T>Select any behavioural concerns observed or reported by caregiver:</T>
+            </p>
+            {BEHAVIOUR_OPTIONS.map((opt) => {
+              const checked = behaviourConcerns.includes(opt.id);
+              return (
+                <label key={opt.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${checked ? "bg-purple-50 border-purple-300" : "hover:bg-muted/50"}`}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      setBehaviourConcerns(prev =>
+                        checked ? prev.filter(c => c !== opt.id) : [...prev, opt.id]
+                      );
+                    }}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  <span className="font-medium text-sm">{t(opt.label)}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">+{opt.points} pts</span>
+                </label>
+              );
+            })}
+
+            {behaviourConcerns.length > 0 && (
+              <div className={`p-3 rounded-lg border text-sm ${behaviourRisk === "High" ? "bg-red-50 border-red-200 text-red-700" : behaviourRisk === "Medium" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-green-50 border-green-200 text-green-700"}`}>
+                <T>Behaviour Score:</T> {behaviourScore} — <span className="font-semibold">{behaviourRisk} <T>Risk</T></span>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-2">
+              <Button variant="outline" onClick={handleBehaviourSkip}>
+                <T>Skip</T>
+              </Button>
+              <Button onClick={handleBehaviourDone} className="min-w-[150px]">
+                <T>Continue</T>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // --- Nutrition Step ---
+  if (showNutrition && selectedPatientId) {
+    return (
+      <div className="max-w-2xl mx-auto py-6 px-4">
+        <StepIndicator currentStep={1} />
+        <NutritionAssessmentForm
+          patientId={selectedPatientId}
+          onComplete={(data) => {
+            setNutritionData(data);
+            setShowNutrition(false);
+          }}
+          onSkip={() => {
+            setNutritionData(null);
+            setShowNutrition(false);
+          }}
+        />
+      </div>
+    );
+  }
 
   // --- Consent Step ---
   if (showConsent && selectedPatientId) {
@@ -429,7 +555,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   if (result && showPhotoStep) {
     return (
       <div className="max-w-2xl mx-auto py-6 px-4">
-        <StepIndicator currentStep={3} />
+        <StepIndicator currentStep={5} />
         <PhotoCapture
           screeningId={Number.parseInt(assessmentId || "0", 10) || 0}
           patientId={selectedPatientId}
@@ -450,7 +576,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   if (result && !showPhotoStep) {
     return (
       <div className="max-w-2xl mx-auto py-6 px-4">
-        <StepIndicator currentStep={4} />
+        <StepIndicator currentStep={6} />
         <AIResults
           assessmentId={assessmentId || undefined}
           onComplete={() => setLocation("/field-worker/home")}
@@ -464,6 +590,14 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
           domainScores={result.domainScores}
           domainAssessments={result.domainAssessments}
           conditionIndicators={result.conditionIndicators}
+          nutritionData={nutritionData}
+          formulaRiskScore={result.formulaRiskScore}
+          formulaRiskCategory={result.formulaRiskCategory}
+          behaviourScore={result.behaviourScore}
+          behaviourRiskLevel={result.behaviourRiskLevel}
+          autismRisk={result.autismRisk}
+          adhdRisk={result.adhdRisk}
+          developmentalStatus={result.developmentalStatus}
         />
       </div>
     );
@@ -473,7 +607,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   if (showTier1Result && tier1Score !== null) {
     return (
       <div className="max-w-2xl mx-auto py-6 px-4">
-        <StepIndicator currentStep={1} />
+        <StepIndicator currentStep={2} />
         <Tier1ResultCard
           score={tier1Score}
           total={15}
@@ -537,7 +671,7 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
   // --- Main Form ---
   return (
     <div className="max-w-2xl mx-auto py-6 px-4">
-      <StepIndicator currentStep={currentTier === 2 ? 2 : (selectedPatientId && hasConsent ? 1 : 0)} />
+      <StepIndicator currentStep={currentTier === 2 ? 3 : (selectedPatientId && hasConsent ? 2 : 0)} />
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-foreground"><T>Developmental Screening</T></h1>
         <p className="text-muted-foreground mt-2">
@@ -641,6 +775,42 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Nutrition Assessment (optional) */}
+          {currentTier === 1 && selectedPatientId && hasConsent && !nutritionData && (
+            <Card className="border-green-200 bg-green-50/30">
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Apple className="w-4 h-4 text-green-600" />
+                    <span className="font-medium text-green-800">
+                      <T>Nutrition assessment available (optional)</T>
+                    </span>
+                  </div>
+                  <Button size="sm" variant="outline" className="text-xs h-7 border-green-300" onClick={() => setShowNutrition(true)}>
+                    <T>Record Measurements</T>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {currentTier === 1 && nutritionData && (
+            <Card className="border-green-200 bg-green-50/30">
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    <T>Nutrition assessment recorded</T>
+                    {nutritionData.nutritionRisk && (
+                      <Badge className={`ml-2 text-xs ${nutritionData.nutritionRisk === "High" ? "bg-red-100 text-red-700" : nutritionData.nutritionRisk === "Medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+                        {nutritionData.nutritionRisk}
+                      </Badge>
+                    )}
+                  </span>
+                </div>
               </CardContent>
             </Card>
           )}

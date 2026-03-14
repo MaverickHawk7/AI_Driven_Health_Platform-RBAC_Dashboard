@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, AlertTriangle, TrendingDown, Activity, ArrowRight, Grid3X3, ClipboardCheck, Filter } from "lucide-react";
-import { useScopedStats, useAlertCounts, useAlerts, useClusterDomains, useDomainHeatmap, useCenters, useLocations } from "@/hooks/use-resources";
+import { Building2, AlertTriangle, TrendingDown, Activity, ArrowRight, Grid3X3, ClipboardCheck, Filter, Apple, FileText, TrendingUp } from "lucide-react";
+import { useScopedStats, useAlertCounts, useAlerts, useClusterDomains, useDomainHeatmap, useCenters, useLocations, useReferralPipelineStats, useOutcomeStats } from "@/hooks/use-resources";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,6 +38,8 @@ export default function CDPODashboard({ embedded }: { embedded?: boolean } = {})
   const { data: alertCounts } = useAlertCounts();
   const { data: regressionAlerts } = useAlerts({ type: "no_improvement", status: "active" });
   const { data: clusterDomains } = useClusterDomains();
+  const { data: referralStats } = useReferralPipelineStats();
+  const { data: outcomeStats } = useOutcomeStats();
   const { data: domainHeatmap } = useDomainHeatmap();
   const { data: centersList } = useCenters();
 
@@ -339,6 +341,39 @@ export default function CDPODashboard({ embedded }: { embedded?: boolean } = {})
           )}
         </CardContent>
       </Card>
+
+      {/* Phase 7: Referral & Outcome Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {referralStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" /> Referral Completion</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Total Referrals</span><span className="font-bold">{referralStats.total}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Completion Rate</span><span className="font-bold text-green-600">{referralStats.total > 0 ? Math.round((referralStats.completed / referralStats.total) * 100) : 0}%</span></div>
+              <div className="flex gap-2 mt-2">
+                {referralStats.byType?.map((t: any) => (
+                  <Badge key={t.type} variant="outline" className="text-xs">{t.type}: {t.count}</Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {outcomeStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-600" /> Program Effectiveness</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Improved</span><span className="font-bold text-green-600">{outcomeStats.improvedPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Same</span><span className="font-bold text-amber-600">{outcomeStats.samePct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Worsened</span><span className="font-bold text-red-600">{outcomeStats.worsenedPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Exited High Risk</span><span className="font-bold">{outcomeStats.exitedHighRisk}</span></div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

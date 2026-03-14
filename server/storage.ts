@@ -5,6 +5,7 @@ import {
   users, patients, screenings, interventions,
   interventionPlans, activityLogs, consentRecords, auditLogs, systemConfig,
   alerts, alertThresholds, supervisorCenterAssignments, messages, centers,
+  nutritionAssessments, environmentAssessments, referrals, outcomeTracking,
   type User, type SafeUser, type InsertUser,
   type Patient, type InsertPatient,
   type Screening, type InsertScreening,
@@ -19,6 +20,10 @@ import {
   type Center, type InsertCenter,
   type SupervisorCenterAssignment, type InsertSupervisorCenterAssignment,
   type Message, type InsertMessage,
+  type NutritionAssessment, type InsertNutritionAssessment,
+  type EnvironmentAssessment, type InsertEnvironmentAssessment,
+  type Referral, type InsertReferral,
+  type OutcomeTracking, type InsertOutcomeTracking,
   type ProgramStats, type LongitudinalProgress, type DomainScores,
 } from "@shared/schema";
 import { eq, desc, sql, and, isNull, inArray } from "drizzle-orm";
@@ -73,7 +78,12 @@ export interface IStorage {
   getFieldWorkers(filterCenterIds?: number[]): Promise<Array<SafeUser & { screeningsCount: number; patientsCount: number; avgRiskScore: number }>>;
 
   getScreenings(patientId?: number): Promise<Screening[]>;
-  createScreening(screening: InsertScreening & { riskScore: number; riskLevel: string; domainScores?: DomainScores; baselineScreeningId?: number }): Promise<Screening>;
+  createScreening(screening: InsertScreening & {
+    riskScore: number; riskLevel: string; domainScores?: DomainScores; baselineScreeningId?: number;
+    behaviourConcerns?: string | null; behaviourScore?: number | null; behaviourRiskLevel?: string | null;
+    autismRisk?: string | null; adhdRisk?: string | null; developmentalStatus?: string | null;
+    formulaRiskScore?: number | null; formulaRiskCategory?: string | null;
+  }): Promise<Screening>;
   updateScreeningPhotoAnalysis(screeningId: number, analysis: unknown): Promise<void>;
 
   getInterventions(patientId?: number): Promise<Intervention[]>;
@@ -136,6 +146,26 @@ export interface IStorage {
 
   getScopedProgramStats(scope: { centerIds?: number[]; block?: string; district?: string }): Promise<ProgramStats>;
 
+
+  getNutritionAssessments(patientId?: number): Promise<NutritionAssessment[]>;
+  createNutritionAssessment(data: InsertNutritionAssessment & {
+    underweight: boolean; stunting: boolean; wasting: boolean; anemia: boolean;
+    nutritionScore: number; nutritionRisk: string;
+  }): Promise<NutritionAssessment>;
+
+  getEnvironmentAssessments(patientId?: number): Promise<EnvironmentAssessment[]>;
+  createEnvironmentAssessment(data: InsertEnvironmentAssessment & {
+    environmentScore: number; environmentRisk: string;
+  }): Promise<EnvironmentAssessment>;
+
+  // Referrals
+  getReferrals(patientId?: number, status?: string): Promise<Referral[]>;
+  createReferral(data: InsertReferral): Promise<Referral>;
+  updateReferral(id: number, updates: { referralStatus?: string; notes?: string; completedAt?: Date | null }): Promise<Referral>;
+
+  // Outcomes
+  getOutcomes(patientId?: number): Promise<OutcomeTracking[]>;
+  createOutcome(data: InsertOutcomeTracking): Promise<OutcomeTracking>;
 
   getMessages(recipientId: number): Promise<Message[]>;
   getSentMessages(senderId: number): Promise<Message[]>;
@@ -279,12 +309,25 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(screenings).orderBy(desc(screenings.date));
   }
 
-  async createScreening(screening: InsertScreening & { riskScore: number; riskLevel: string; domainScores?: DomainScores; baselineScreeningId?: number }): Promise<Screening> {
+  async createScreening(screening: InsertScreening & {
+    riskScore: number; riskLevel: string; domainScores?: DomainScores; baselineScreeningId?: number;
+    behaviourConcerns?: string | null; behaviourScore?: number | null; behaviourRiskLevel?: string | null;
+    autismRisk?: string | null; adhdRisk?: string | null; developmentalStatus?: string | null;
+    formulaRiskScore?: number | null; formulaRiskCategory?: string | null;
+  }): Promise<Screening> {
     const [newScreening] = await db.insert(screenings).values({
       ...screening,
       riskLevel: screening.riskLevel as "Low" | "Medium" | "High",
       domainScores: screening.domainScores ?? null,
       baselineScreeningId: screening.baselineScreeningId ?? null,
+      behaviourConcerns: screening.behaviourConcerns ?? null,
+      behaviourScore: screening.behaviourScore ?? null,
+      behaviourRiskLevel: (screening.behaviourRiskLevel as any) ?? null,
+      autismRisk: (screening.autismRisk as any) ?? null,
+      adhdRisk: (screening.adhdRisk as any) ?? null,
+      developmentalStatus: screening.developmentalStatus ?? null,
+      formulaRiskScore: screening.formulaRiskScore ?? null,
+      formulaRiskCategory: (screening.formulaRiskCategory as any) ?? null,
     }).returning();
     return newScreening;
   }
@@ -690,6 +733,94 @@ export class DatabaseStorage implements IStorage {
   }
 
 
+  async getNutritionAssessments(patientId?: number): Promise<NutritionAssessment[]> {
+    if (patientId) {
+      return await db.select().from(nutritionAssessments)
+        .where(eq(nutritionAssessments.patientId, patientId))
+        .orderBy(desc(nutritionAssessments.assessedAt));
+    }
+    return await db.select().from(nutritionAssessments).orderBy(desc(nutritionAssessments.assessedAt));
+  }
+
+  async createNutritionAssessment(data: InsertNutritionAssessment & {
+    underweight: boolean; stunting: boolean; wasting: boolean; anemia: boolean;
+    nutritionScore: number; nutritionRisk: string;
+  }): Promise<NutritionAssessment> {
+    const insertData = {
+      ...data,
+      nutritionRisk: data.nutritionRisk as "Low" | "Medium" | "High",
+    };
+    const [record] = await db.insert(nutritionAssessments).values(insertData).returning();
+    return record;
+  }
+
+  async getEnvironmentAssessments(patientId?: number): Promise<EnvironmentAssessment[]> {
+    if (patientId) {
+      return await db.select().from(environmentAssessments)
+        .where(eq(environmentAssessments.patientId, patientId))
+        .orderBy(desc(environmentAssessments.assessedAt));
+    }
+    return await db.select().from(environmentAssessments).orderBy(desc(environmentAssessments.assessedAt));
+  }
+
+  async createEnvironmentAssessment(data: InsertEnvironmentAssessment & {
+    environmentScore: number; environmentRisk: string;
+  }): Promise<EnvironmentAssessment> {
+    const insertData = {
+      ...data,
+      environmentRisk: data.environmentRisk as "Low" | "Medium" | "High",
+    };
+    const [record] = await db.insert(environmentAssessments).values(insertData).returning();
+    return record;
+  }
+
+  // Referrals
+  async getReferrals(patientId?: number, status?: string): Promise<Referral[]> {
+    const conditions = [];
+    if (patientId) conditions.push(eq(referrals.patientId, patientId));
+    if (status) conditions.push(eq(referrals.referralStatus, status as any));
+    if (conditions.length > 0) {
+      return await db.select().from(referrals).where(and(...conditions)).orderBy(desc(referrals.referredAt));
+    }
+    return await db.select().from(referrals).orderBy(desc(referrals.referredAt));
+  }
+
+  async createReferral(data: InsertReferral): Promise<Referral> {
+    const [record] = await db.insert(referrals).values({
+      ...data,
+      referralType: data.referralType as any,
+      referralReason: data.referralReason as any,
+      referralStatus: (data.referralStatus as any) ?? "Pending",
+    }).returning();
+    return record;
+  }
+
+  async updateReferral(id: number, updates: { referralStatus?: string; notes?: string; completedAt?: Date | null }): Promise<Referral> {
+    const setData: any = {};
+    if (updates.referralStatus) setData.referralStatus = updates.referralStatus;
+    if (updates.notes !== undefined) setData.notes = updates.notes;
+    if (updates.completedAt !== undefined) setData.completedAt = updates.completedAt;
+    const [record] = await db.update(referrals).set(setData).where(eq(referrals.id, id)).returning();
+    return record;
+  }
+
+  // Outcomes
+  async getOutcomes(patientId?: number): Promise<OutcomeTracking[]> {
+    if (patientId) {
+      return await db.select().from(outcomeTracking).where(eq(outcomeTracking.patientId, patientId)).orderBy(desc(outcomeTracking.assessedAt));
+    }
+    return await db.select().from(outcomeTracking).orderBy(desc(outcomeTracking.assessedAt));
+  }
+
+  async createOutcome(data: InsertOutcomeTracking): Promise<OutcomeTracking> {
+    const [record] = await db.insert(outcomeTracking).values({
+      ...data,
+      autismRiskChange: (data.autismRiskChange as any) ?? null,
+      improvementStatus: (data.improvementStatus as any) ?? null,
+    }).returning();
+    return record;
+  }
+
   async getMessages(recipientId: number): Promise<Message[]> {
     return await db.select().from(messages)
       .where(eq(messages.recipientId, recipientId))
@@ -797,7 +928,11 @@ class InMemoryStorage implements IStorage {
   private assignmentsList: SupervisorCenterAssignment[] = [];
   private messagesList: Message[] = [];
   private centersList: Center[] = [];
-  private nextId = { user: 1, patient: 1, screening: 1, intervention: 1, interventionPlan: 1, activityLog: 1, consentRecord: 1, auditLog: 1, systemConfig: 1, alert: 1, alertThreshold: 1, assignment: 1, message: 1, center: 1 };
+  private nutritionAssessmentsList: NutritionAssessment[] = [];
+  private environmentAssessmentsList: EnvironmentAssessment[] = [];
+  private referralsList: Referral[] = [];
+  private outcomesList: OutcomeTracking[] = [];
+  private nextId = { user: 1, patient: 1, screening: 1, intervention: 1, interventionPlan: 1, activityLog: 1, consentRecord: 1, auditLog: 1, systemConfig: 1, alert: 1, alertThreshold: 1, assignment: 1, message: 1, center: 1, nutritionAssessment: 1, environmentAssessment: 1, referral: 1, outcome: 1 };
 
   private now() { return new Date(); }
 
@@ -884,6 +1019,12 @@ class InMemoryStorage implements IStorage {
       block: null,
       registeredByUserId: null,
       centerId: null,
+      dob: null,
+      gender: null,
+      modeDelivery: null,
+      modeConception: null,
+      birthStatus: null,
+      consanguinity: false,
       ...p,
     };
     this.patients.push(record);
@@ -931,7 +1072,12 @@ class InMemoryStorage implements IStorage {
       : [...this.screenings];
     return list.sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
   }
-  async createScreening(s: InsertScreening & { riskScore: number; riskLevel: string; domainScores?: DomainScores; baselineScreeningId?: number }): Promise<Screening> {
+  async createScreening(s: InsertScreening & {
+    riskScore: number; riskLevel: string; domainScores?: DomainScores; baselineScreeningId?: number;
+    behaviourConcerns?: string | null; behaviourScore?: number | null; behaviourRiskLevel?: string | null;
+    autismRisk?: string | null; adhdRisk?: string | null; developmentalStatus?: string | null;
+    formulaRiskScore?: number | null; formulaRiskCategory?: string | null;
+  }): Promise<Screening> {
     const record: Screening = {
       ...s,
       id: this.nextId.screening++,
@@ -944,6 +1090,20 @@ class InMemoryStorage implements IStorage {
       screeningType: s.screeningType ?? "baseline",
       baselineScreeningId: s.baselineScreeningId ?? null,
       domainScores: s.domainScores ?? null,
+      behaviourConcerns: s.behaviourConcerns ?? null,
+      behaviourScore: s.behaviourScore ?? null,
+      behaviourRiskLevel: (s.behaviourRiskLevel as any) ?? null,
+      autismRisk: (s.autismRisk as any) ?? null,
+      adhdRisk: (s.adhdRisk as any) ?? null,
+      developmentalStatus: s.developmentalStatus ?? null,
+      formulaRiskScore: s.formulaRiskScore ?? null,
+      formulaRiskCategory: (s.formulaRiskCategory as any) ?? null,
+      gmDQ: null,
+      fmDQ: null,
+      lcDQ: null,
+      cogDQ: null,
+      seDQ: null,
+      compositeDQ: null,
     };
     this.screenings.push(record);
     return record;
@@ -1435,6 +1595,122 @@ class InMemoryStorage implements IStorage {
     };
   }
 
+
+  async getNutritionAssessments(patientId?: number): Promise<NutritionAssessment[]> {
+    const list = patientId
+      ? this.nutritionAssessmentsList.filter(n => n.patientId === patientId)
+      : this.nutritionAssessmentsList;
+    return list.sort((a, b) => (b.assessedAt?.getTime() ?? 0) - (a.assessedAt?.getTime() ?? 0));
+  }
+
+  async createNutritionAssessment(data: InsertNutritionAssessment & {
+    underweight: boolean; stunting: boolean; wasting: boolean; anemia: boolean;
+    nutritionScore: number; nutritionRisk: string;
+  }): Promise<NutritionAssessment> {
+    const record: NutritionAssessment = {
+      id: this.nextId.nutritionAssessment++,
+      createdAt: this.now(),
+      assessedAt: this.now(),
+      patientId: data.patientId,
+      screeningId: data.screeningId ?? null,
+      weightKg: data.weightKg ?? null,
+      heightCm: data.heightCm ?? null,
+      muacCm: data.muacCm ?? null,
+      hemoglobin: data.hemoglobin ?? null,
+      assessedByUserId: data.assessedByUserId ?? null,
+      underweight: data.underweight,
+      stunting: data.stunting,
+      wasting: data.wasting,
+      anemia: data.anemia,
+      nutritionScore: data.nutritionScore,
+      nutritionRisk: data.nutritionRisk as "Low" | "Medium" | "High",
+    };
+    this.nutritionAssessmentsList.push(record);
+    return record;
+  }
+
+  async getEnvironmentAssessments(patientId?: number): Promise<EnvironmentAssessment[]> {
+    const list = patientId
+      ? this.environmentAssessmentsList.filter(e => e.patientId === patientId)
+      : this.environmentAssessmentsList;
+    return list.sort((a, b) => (b.assessedAt?.getTime() ?? 0) - (a.assessedAt?.getTime() ?? 0));
+  }
+
+  async createEnvironmentAssessment(data: InsertEnvironmentAssessment & {
+    environmentScore: number; environmentRisk: string;
+  }): Promise<EnvironmentAssessment> {
+    const record: EnvironmentAssessment = {
+      id: this.nextId.environmentAssessment++,
+      createdAt: this.now(),
+      assessedAt: this.now(),
+      patientId: data.patientId,
+      parentChildInteraction: data.parentChildInteraction ?? null,
+      parentMentalHealth: data.parentMentalHealth ?? null,
+      homeStimulation: data.homeStimulation ?? null,
+      playMaterials: data.playMaterials ?? false,
+      caregiverEngagement: data.caregiverEngagement ?? null,
+      languageExposure: data.languageExposure ?? null,
+      safeWater: data.safeWater ?? true,
+      toiletFacility: data.toiletFacility ?? true,
+      environmentScore: data.environmentScore,
+      environmentRisk: data.environmentRisk as "Low" | "Medium" | "High",
+      assessedByUserId: data.assessedByUserId ?? null,
+    };
+    this.environmentAssessmentsList.push(record);
+    return record;
+  }
+
+  // Referrals
+  async getReferrals(patientId?: number, status?: string): Promise<Referral[]> {
+    let list = [...this.referralsList];
+    if (patientId) list = list.filter(r => r.patientId === patientId);
+    if (status) list = list.filter(r => r.referralStatus === status);
+    return list.sort((a, b) => (b.referredAt?.getTime() ?? 0) - (a.referredAt?.getTime() ?? 0));
+  }
+  async createReferral(data: InsertReferral): Promise<Referral> {
+    const record: Referral = {
+      id: this.nextId.referral++, createdAt: this.now(), referredAt: this.now(), completedAt: null,
+      patientId: data.patientId, screeningId: data.screeningId ?? null,
+      referralTriggered: data.referralTriggered ?? false,
+      referralType: data.referralType as any, referralReason: data.referralReason as any,
+      referralStatus: (data.referralStatus as any) ?? "Pending",
+      referredByUserId: data.referredByUserId ?? null, notes: data.notes ?? null,
+    };
+    this.referralsList.push(record);
+    return record;
+  }
+  async updateReferral(id: number, updates: { referralStatus?: string; notes?: string; completedAt?: Date | null }): Promise<Referral> {
+    const r = this.referralsList.find(r => r.id === id);
+    if (!r) throw new Error("Referral not found");
+    if (updates.referralStatus) (r as any).referralStatus = updates.referralStatus;
+    if (updates.notes !== undefined) r.notes = updates.notes;
+    if (updates.completedAt !== undefined) r.completedAt = updates.completedAt;
+    return r;
+  }
+
+  // Outcomes
+  async getOutcomes(patientId?: number): Promise<OutcomeTracking[]> {
+    const list = patientId ? this.outcomesList.filter(o => o.patientId === patientId) : this.outcomesList;
+    return list.sort((a, b) => (b.assessedAt?.getTime() ?? 0) - (a.assessedAt?.getTime() ?? 0));
+  }
+  async createOutcome(data: InsertOutcomeTracking): Promise<OutcomeTracking> {
+    const record: OutcomeTracking = {
+      id: this.nextId.outcome++, createdAt: this.now(), assessedAt: this.now(),
+      patientId: data.patientId,
+      baselineScreeningId: data.baselineScreeningId ?? null,
+      followupScreeningId: data.followupScreeningId ?? null,
+      reductionInDelayMonths: data.reductionInDelayMonths ?? 0,
+      domainImprovement: data.domainImprovement ?? false,
+      autismRiskChange: (data.autismRiskChange as any) ?? null,
+      exitHighRisk: data.exitHighRisk ?? false,
+      improvementStatus: (data.improvementStatus as any) ?? null,
+      homeActivitiesAssigned: data.homeActivitiesAssigned ?? 0,
+      followupConducted: data.followupConducted ?? false,
+      assessedByUserId: data.assessedByUserId ?? null,
+    };
+    this.outcomesList.push(record);
+    return record;
+  }
 
   async getMessages(recipientId: number): Promise<Message[]> {
     return this.messagesList

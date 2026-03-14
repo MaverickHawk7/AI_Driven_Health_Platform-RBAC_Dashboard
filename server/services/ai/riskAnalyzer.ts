@@ -31,6 +31,20 @@ export interface ConditionIndicator {
   caregiverMessage: string;
 }
 
+export interface BehaviourResult {
+  behaviourConcerns: string; // comma-separated
+  behaviourScore: number;
+  behaviourRiskLevel: "Low" | "Medium" | "High";
+}
+
+export interface FormulaScoreResult {
+  formulaRiskScore: number;
+  formulaRiskCategory: "Low" | "Medium" | "High";
+  autismRisk: "Low" | "Moderate" | "High";
+  adhdRisk: "Low" | "Moderate" | "High";
+  developmentalStatus: string;
+}
+
 export interface RiskResult {
   riskScore: number;
   riskLevel: "Low" | "Medium" | "High";
@@ -346,6 +360,10 @@ const CONDITION_REFERRALS: Record<string, { referral: string; caregiverMessage: 
     referral: "Child Psychologist or Behavioral Therapist. PHC referral for further evaluation.",
     caregiverMessage: "Your child may have big emotions that are hard to manage. This is something that can be helped with the right guidance. A specialist can show you calming techniques.",
   },
+  "ADHD Indicators": {
+    referral: "Developmental Pediatrician or Child Psychologist for ADHD evaluation. PHC referral recommended within 4 weeks.",
+    caregiverMessage: "Your child may have difficulty focusing or sitting still. This is common and can be helped with the right support. A specialist can guide you with strategies.",
+  },
 };
 
 function ruleBasedPatternDetection(
@@ -424,6 +442,24 @@ function ruleBasedPatternDetection(
     });
   }
 
+  // ADHD: High emotional regulation + attention concerns, but social interaction relatively intact
+  // Uses emotional regulation (difficulty calming, tantrums) + repetitive/focus behavior
+  const adhdScore = Math.round(
+    (d.emotionalRegulation * 0.40) + (d.repetitiveBehavior * 0.30) +
+    (d.communication * 0.15) + (d.sensorySensitivity * 0.15)
+  );
+  // ADHD pattern: emotional dysregulation + focus issues, but social interest is present
+  if (adhdScore >= 35 && d.socialInteraction < 50 && d.emotionalRegulation >= 40) {
+    const ref = CONDITION_REFERRALS["ADHD Indicators"];
+    indicators.push({
+      condition: "ADHD Indicators",
+      ruleBasedConfidence: Math.min(100, adhdScore),
+      aiConfidence: 0,
+      confidence: 0,
+      ...ref,
+    });
+  }
+
   return indicators;
 }
 
@@ -440,6 +476,7 @@ Conditions to evaluate:
 3. "Global Developmental Delay" — broad moderate concerns across many domains
 4. "Sensory Processing Concerns" — heightened sensory sensitivity
 5. "Behavioral/Emotional Concerns" — emotional dysregulation, behavioral difficulties
+6. "ADHD Indicators" — attention/focus difficulties + emotional dysregulation, but social interest preserved
 
 RESPOND WITH EXACTLY THIS JSON (nothing else):
 {"conditions":[{"condition":"NAME","confidence":NUMBER,"reasoning":"SHORT_TEXT"}]}
@@ -622,4 +659,94 @@ export async function analyzeScreening(
   }
 
   return result!;
+}
+
+// ── Behaviour scoring ────────────────────────────────────────────────────
+
+const BEHAVIOUR_SCORES: Record<string, number> = {
+  sleep: 3,
+  aggression: 4,
+  feeding: 2,
+  tantrums: 3,
+  other: 2,
+};
+
+export function computeBehaviourScore(concerns: string[]): BehaviourResult {
+  let score = 0;
+  for (const c of concerns) {
+    score += BEHAVIOUR_SCORES[c.toLowerCase()] ?? 2;
+  }
+  const behaviourRiskLevel: BehaviourResult["behaviourRiskLevel"] =
+    score > 10 ? "High" : score >= 6 ? "Medium" : "Low";
+
+  return {
+    behaviourConcerns: concerns.join(","),
+    behaviourScore: score,
+    behaviourRiskLevel,
+  };
+}
+
+// ── Deterministic formula score ──────────────────────────────────────────
+
+export function computeFormulaScore(opts: {
+  domainScores?: Record<string, number> | null;
+  conditionIndicators?: ConditionIndicator[] | null;
+  behaviourRiskLevel?: string | null;
+  nutritionRisk?: string | null;
+  environmentRisk?: string | null;
+}): FormulaScoreResult {
+  let score = 0;
+
+  // Count domain delays (score >= 60 = delay)
+  let delayCount = 0;
+  if (opts.domainScores) {
+    for (const val of Object.values(opts.domainScores)) {
+      if (typeof val === "number" && val >= 60) {
+        score += 5;
+        delayCount++;
+      }
+    }
+  }
+
+  // Autism risk from condition indicators
+  let autismRisk: FormulaScoreResult["autismRisk"] = "Low";
+  let adhdRisk: FormulaScoreResult["adhdRisk"] = "Low";
+
+  if (opts.conditionIndicators) {
+    for (const ci of opts.conditionIndicators) {
+      if (ci.condition === "Autism Spectrum Indicators") {
+        if (ci.confidence >= 60) { score += 15; autismRisk = "High"; }
+        else if (ci.confidence >= 35) { score += 8; autismRisk = "Moderate"; }
+      }
+      if (ci.condition === "ADHD Indicators") {
+        if (ci.confidence >= 60) { score += 8; adhdRisk = "High"; }
+        else if (ci.confidence >= 35) { score += 4; adhdRisk = "Moderate"; }
+      }
+    }
+  }
+
+  // Behaviour
+  if (opts.behaviourRiskLevel === "High") score += 7;
+  else if (opts.behaviourRiskLevel === "Medium") score += 3;
+
+  // Nutrition context bonus
+  if (opts.nutritionRisk === "High") score += 3;
+
+  // Environment context bonus
+  if (opts.environmentRisk === "High") score += 3;
+
+  const formulaRiskCategory: FormulaScoreResult["formulaRiskCategory"] =
+    score > 25 ? "High" : score >= 11 ? "Medium" : "Low";
+
+  const developmentalStatus = delayCount === 0
+    ? "No delays identified"
+    : `${delayCount} delay${delayCount > 1 ? "s" : ""} identified`;
+
+  return {
+    formulaRiskScore: score,
+    formulaRiskCategory,
+    autismRisk,
+    adhdRisk,
+    developmentalStatus,
+  };
 }

@@ -17,6 +17,10 @@ import {
   type AIPerformanceMetrics,
   type DistrictComparison,
   type IntensityAdjustment,
+  type NutritionAssessment,
+  type EnvironmentAssessment,
+  type Referral,
+  type OutcomeTracking,
 } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -1054,4 +1058,218 @@ export function useDistrictComparison() {
       return res.json() as Promise<DistrictComparison[]>;
     },
   });
+}
+
+export function useNutritionAssessments(patientId?: number) {
+  return useQuery({
+    queryKey: [api.nutritionAssessments.list.path, patientId],
+    queryFn: async () => {
+      const url = patientId
+        ? `${api.nutritionAssessments.list.path}?patientId=${patientId}`
+        : api.nutritionAssessments.list.path;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch nutrition assessments");
+      return res.json() as Promise<NutritionAssessment[]>;
+    },
+    enabled: patientId !== undefined ? patientId > 0 : true,
+  });
+}
+
+export function useCreateNutritionAssessment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: {
+      patientId: number;
+      screeningId?: number;
+      weightKg?: number;
+      heightCm?: number;
+      muacCm?: number;
+      hemoglobin?: number;
+      assessedByUserId?: number;
+    }) => {
+      const res = await fetch(api.nutritionAssessments.create.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: "Failed to create nutrition assessment" }));
+        throw new Error(body.message);
+      }
+      return res.json() as Promise<NutritionAssessment>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.nutritionAssessments.list.path] });
+      toast({ title: "Saved", description: "Nutrition assessment recorded." });
+    },
+    onError: (err) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useEnvironmentAssessments(patientId?: number) {
+  return useQuery({
+    queryKey: [api.environmentAssessments.list.path, patientId],
+    queryFn: async () => {
+      const url = patientId
+        ? `${api.environmentAssessments.list.path}?patientId=${patientId}`
+        : api.environmentAssessments.list.path;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch environment assessments");
+      return res.json() as Promise<EnvironmentAssessment[]>;
+    },
+    enabled: patientId !== undefined ? patientId > 0 : true,
+  });
+}
+
+export function useCreateEnvironmentAssessment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: {
+      patientId: number;
+      parentChildInteraction?: number;
+      parentMentalHealth?: number;
+      homeStimulation?: number;
+      playMaterials?: boolean;
+      caregiverEngagement?: string;
+      languageExposure?: string;
+      safeWater?: boolean;
+      toiletFacility?: boolean;
+      assessedByUserId?: number;
+    }) => {
+      const res = await fetch(api.environmentAssessments.create.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: "Failed to create environment assessment" }));
+        throw new Error(body.message);
+      }
+      return res.json() as Promise<EnvironmentAssessment>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.environmentAssessments.list.path] });
+      toast({ title: "Saved", description: "Environment assessment recorded." });
+    },
+    onError: (err) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+}
+
+// === Referrals ===
+
+export function useReferrals(patientId?: number, status?: string) {
+  const params = new URLSearchParams();
+  if (patientId) params.set("patientId", String(patientId));
+  if (status) params.set("status", status);
+  const url = `${api.referrals.list.path}?${params}`;
+  return useQuery({
+    queryKey: [api.referrals.list.path, patientId, status],
+    queryFn: async () => {
+      const res = await fetch(url);
+      return res.json() as Promise<Referral[]>;
+    },
+  });
+}
+
+export function useCreateReferral() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch(api.referrals.create.path, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Failed");
+      return res.json() as Promise<Referral>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.referrals.list.path] });
+      toast({ title: "Saved", description: "Referral created." });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+}
+
+export function useUpdateReferral() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: number; referralStatus?: string; notes?: string }) => {
+      const res = await fetch(`/api/referrals/${id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Failed");
+      return res.json() as Promise<Referral>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.referrals.list.path] });
+      toast({ title: "Updated", description: "Referral status updated." });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+}
+
+// === Outcomes ===
+
+export function useOutcomes(patientId?: number) {
+  const params = new URLSearchParams();
+  if (patientId) params.set("patientId", String(patientId));
+  const url = `${api.outcomes.list.path}?${params}`;
+  return useQuery({
+    queryKey: [api.outcomes.list.path, patientId],
+    queryFn: async () => {
+      const res = await fetch(url);
+      return res.json() as Promise<OutcomeTracking[]>;
+    },
+  });
+}
+
+export function useCreateOutcome() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await fetch(api.outcomes.create.path, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Failed");
+      return res.json() as Promise<OutcomeTracking>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.outcomes.list.path] });
+      toast({ title: "Saved", description: "Outcome recorded." });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+}
+
+// Phase 7: Dashboard aggregation hooks
+export function useNutritionStats() {
+  return useQuery({ queryKey: [api.stats.nutrition.path], queryFn: () => fetchJson(api.stats.nutrition.path) });
+}
+export function useReferralPipelineStats() {
+  return useQuery({ queryKey: [api.stats.referralPipeline.path], queryFn: () => fetchJson(api.stats.referralPipeline.path) });
+}
+export function useOutcomeStats() {
+  return useQuery({ queryKey: [api.stats.outcomeSummary.path], queryFn: () => fetchJson(api.stats.outcomeSummary.path) });
+}
+export function useEnvironmentStats() {
+  return useQuery({ queryKey: [api.stats.environment.path], queryFn: () => fetchJson(api.stats.environment.path) });
+}
+
+async function fetchJson(path: string) {
+  const res = await fetch(path, { credentials: "include" });
+  if (!res.ok) throw new Error("Failed to fetch stats");
+  return res.json();
 }

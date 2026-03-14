@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useScopedStats, useAlerts, useAlertCounts, useUpdateAlert, useDataQuality, useClusterDomains, useCenters } from "@/hooks/use-resources";
+import { useScopedStats, useAlerts, useAlertCounts, useUpdateAlert, useDataQuality, useClusterDomains, useCenters, useNutritionStats, useReferralPipelineStats, useOutcomeStats } from "@/hooks/use-resources";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RiskBadge } from "@/components/RiskBadge";
-import { AlertCircle, AlertTriangle, ArrowRight, Activity, Users, Bell, Clock, Calendar, ShieldAlert, BarChart3, CheckSquare, Filter } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Activity, Users, Bell, Clock, Calendar, ShieldAlert, BarChart3, CheckSquare, Filter, Apple, FileText, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function SupervisorDashboard() {
@@ -29,6 +29,9 @@ export default function SupervisorDashboard() {
   const { data: dataQuality } = useDataQuality();
   const { data: clusterDomains } = useClusterDomains();
   const { data: centersList } = useCenters();
+  const { data: nutritionStats } = useNutritionStats();
+  const { data: referralStats } = useReferralPipelineStats();
+  const { data: outcomeStats } = useOutcomeStats();
 
   // Single fetch for all patients and screenings
   const { data: allPatients, isLoading } = useQuery({
@@ -563,6 +566,49 @@ export default function SupervisorDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* Phase 7: Nutrition / Referral / Outcome Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {nutritionStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><Apple className="w-4 h-4 text-green-600" /> Nutrition Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Assessments</span><span className="font-bold">{nutritionStats.totalAssessments}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Underweight</span><span className="font-bold text-red-600">{nutritionStats.underweightPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Stunting</span><span className="font-bold text-amber-600">{nutritionStats.stuntingPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">High Risk</span><span className="font-bold text-red-600">{nutritionStats.highRiskPct}%</span></div>
+            </CardContent>
+          </Card>
+        )}
+        {referralStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" /> Referral Pipeline</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span className="font-bold">{referralStats.total}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Pending</span><span className="font-bold text-amber-600">{referralStats.pending}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Under Treatment</span><span className="font-bold text-blue-600">{referralStats.underTreatment}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Completed</span><span className="font-bold text-green-600">{referralStats.completed}</span></div>
+            </CardContent>
+          </Card>
+        )}
+        {outcomeStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-600" /> Outcome Metrics</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Outcomes Recorded</span><span className="font-bold">{outcomeStats.totalOutcomes}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Improved</span><span className="font-bold text-green-600">{outcomeStats.improvedPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Exited High Risk</span><span className="font-bold">{outcomeStats.exitedHighRisk}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Avg Delay Reduction</span><span className="font-bold">{outcomeStats.avgDelayReduction} mo</span></div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Follow-up Calendar */}
       {followUps.length > 0 && (

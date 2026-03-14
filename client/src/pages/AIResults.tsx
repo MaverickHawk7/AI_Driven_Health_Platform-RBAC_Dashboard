@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Info, ArrowLeft, BrainCircuit, Calculator, ClipboardList, Camera, FileText, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Target, ShieldAlert } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, ArrowLeft, ArrowRight, BrainCircuit, Calculator, ClipboardList, Camera, FileText, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Target, ShieldAlert, Brain } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { usePatientPrediction } from "@/hooks/use-resources";
 import { CaregiverToggle, ReadAloudButton, useCaregiverMode } from "@/components/CaregiverMode";
@@ -30,6 +30,19 @@ interface ConditionIndicator {
   caregiverMessage: string;
 }
 
+interface NutritionData {
+  underweight?: boolean;
+  stunting?: boolean;
+  wasting?: boolean;
+  anemia?: boolean;
+  nutritionScore?: number;
+  nutritionRisk?: string;
+  weightKg?: number;
+  heightCm?: number;
+  muacCm?: number;
+  hemoglobin?: number;
+}
+
 interface AIResultsProps {
   assessmentId?: string;
   onComplete?: () => void;
@@ -43,6 +56,14 @@ interface AIResultsProps {
   domainScores?: Record<string, number> | null;
   domainAssessments?: AIDomainAssessment[] | null;
   conditionIndicators?: ConditionIndicator[] | null;
+  nutritionData?: NutritionData | null;
+  formulaRiskScore?: number | null;
+  formulaRiskCategory?: string | null;
+  behaviourScore?: number | null;
+  behaviourRiskLevel?: string | null;
+  autismRisk?: string | null;
+  adhdRisk?: string | null;
+  developmentalStatus?: string | null;
 }
 
 // Legacy domain mapping (old q1-q5 screenings)
@@ -230,7 +251,7 @@ function getDomainScoreLabel(score: number): string {
   return "Low Risk";
 }
 
-export default function AIResults({ assessmentId: propId, onComplete, riskScore, riskLevel, explanation, answers, source, photoAnalysis, patientId, domainScores, domainAssessments, conditionIndicators }: AIResultsProps) {
+export default function AIResults({ assessmentId: propId, onComplete, riskScore, riskLevel, explanation, answers, source, photoAnalysis, patientId, domainScores, domainAssessments, conditionIndicators, nutritionData, formulaRiskScore, formulaRiskCategory, behaviourScore, behaviourRiskLevel, autismRisk, adhdRisk, developmentalStatus }: AIResultsProps) {
   const [, setLocation] = useLocation();
   const params = useParams();
   const id = propId || params.id;
@@ -427,6 +448,110 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
         </Card>
       </div>
 
+      {/* Formula Score + Behaviour + Status (Phase 4) */}
+      {formulaRiskScore != null && (
+        <Card className="border-2 border-indigo-200 bg-indigo-50/30 dark:bg-indigo-950/20 dark:border-indigo-800">
+          <CardHeader>
+            <CardTitle className={`${caregiverMode ? "text-xl" : "text-lg"} flex items-center gap-2`}>
+              <Calculator className="w-5 h-5 text-indigo-600" />
+              {caregiverMode ? "Detailed Check" : "Deterministic Formula Score"}
+              <Badge variant="outline" className="text-xs ml-auto font-normal">
+                Rule-Based
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                <p className="text-xs text-muted-foreground">Formula Score</p>
+                <p className={`text-2xl font-bold ${formulaRiskCategory === "High" ? "text-red-600" : formulaRiskCategory === "Medium" ? "text-amber-600" : "text-green-600"}`}>
+                  {formulaRiskScore}
+                </p>
+                <Badge className={`text-xs mt-1 ${formulaRiskCategory === "High" ? "bg-red-100 text-red-700" : formulaRiskCategory === "Medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+                  {formulaRiskCategory}
+                </Badge>
+              </div>
+              {behaviourScore != null && (
+                <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                  <p className="text-xs text-muted-foreground">Behaviour</p>
+                  <p className={`text-2xl font-bold ${behaviourRiskLevel === "High" ? "text-red-600" : behaviourRiskLevel === "Medium" ? "text-amber-600" : "text-green-600"}`}>
+                    {behaviourScore}
+                  </p>
+                  <Badge className={`text-xs mt-1 ${behaviourRiskLevel === "High" ? "bg-red-100 text-red-700" : behaviourRiskLevel === "Medium" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+                    {behaviourRiskLevel}
+                  </Badge>
+                </div>
+              )}
+              {autismRisk && autismRisk !== "Low" && (
+                <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                  <p className="text-xs text-muted-foreground">Autism Risk</p>
+                  <p className={`text-lg font-bold ${autismRisk === "High" ? "text-red-600" : "text-amber-600"}`}>
+                    {autismRisk}
+                  </p>
+                </div>
+              )}
+              {adhdRisk && adhdRisk !== "Low" && (
+                <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                  <p className="text-xs text-muted-foreground">ADHD Risk</p>
+                  <p className={`text-lg font-bold ${adhdRisk === "High" ? "text-red-600" : "text-amber-600"}`}>
+                    {adhdRisk}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {developmentalStatus && (
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="outline" className={developmentalStatus.includes("No delays") ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-700 border-amber-200"}>
+                  {developmentalStatus}
+                </Badge>
+              </div>
+            )}
+
+            {!caregiverMode && (
+              <p className="text-xs text-muted-foreground">
+                Formula: domain delays(+5ea) + autism(+8/15) + ADHD(+4/8) + behaviour(+3/7) + nutrition(+3) + environment(+3). Thresholds: ≤10 Low | 11-25 Medium | &gt;25 High
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-Referral Recommendations (Phase 5) */}
+      {formulaRiskScore != null && (
+        (() => {
+          const recs: { type: string; reason: string; color: string }[] = [];
+          if (formulaRiskCategory === "High") recs.push({ type: "RBSK", reason: "High composite risk score", color: "bg-red-100 text-red-700" });
+          if (autismRisk === "High" || autismRisk === "Medium") recs.push({ type: "DEIC", reason: `Autism risk: ${autismRisk}`, color: "bg-indigo-100 text-indigo-700" });
+          if (adhdRisk === "High" || adhdRisk === "Medium") recs.push({ type: "PHC", reason: `ADHD indicators: ${adhdRisk}`, color: "bg-purple-100 text-purple-700" });
+          if (behaviourRiskLevel === "High") recs.push({ type: "PHC", reason: "High behaviour concern score", color: "bg-orange-100 text-orange-700" });
+          if (recs.length === 0) return null;
+          return (
+            <Card className="border-2 border-amber-200 bg-amber-50/30 dark:bg-amber-950/20 dark:border-amber-800">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ShieldAlert className="w-5 h-5 text-amber-600" />
+                  {caregiverMode ? "Next Steps" : "Auto-Referral Recommendations"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {caregiverMode ? (
+                  <p className="text-sm text-muted-foreground">Based on the assessment, your child may benefit from specialist visits. The health team will help arrange these.</p>
+                ) : (
+                  recs.map((r, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm">
+                      <Badge className={r.color}>{r.type}</Badge>
+                      <span>{r.reason}</span>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground ml-auto" />
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()
+      )}
+
       {/* Domain Score Bars (when domainScores available) */}
       {domainScores && (
         <Card className="border-2">
@@ -462,6 +587,77 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
             {!caregiverMode && (
               <p className="text-xs text-muted-foreground mt-2">
                 Higher scores indicate greater risk. Green &lt;40 | Amber 40-74 | Red &ge;75
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Nutrition Risk Card */}
+      {nutritionData && (
+        <Card className="border-2 border-green-200 bg-green-50/30">
+          <CardHeader>
+            <CardTitle className={`${caregiverMode ? "text-xl" : "text-lg"} flex items-center gap-2`}>
+              <span className="text-lg">🍎</span>
+              {caregiverMode ? "Nutrition Check" : "Nutrition Assessment"}
+              <Badge className={`ml-auto text-xs ${
+                nutritionData.nutritionRisk === "High" ? "bg-red-100 text-red-700" :
+                nutritionData.nutritionRisk === "Medium" ? "bg-amber-100 text-amber-700" :
+                "bg-green-100 text-green-700"
+              }`}>
+                {nutritionData.nutritionRisk || "Low"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {nutritionData.weightKg != null && (
+                <div className="text-center p-2 rounded-lg bg-white border">
+                  <p className="text-xs text-muted-foreground">Weight</p>
+                  <p className="font-bold text-lg">{nutritionData.weightKg} <span className="text-xs font-normal">kg</span></p>
+                </div>
+              )}
+              {nutritionData.heightCm != null && (
+                <div className="text-center p-2 rounded-lg bg-white border">
+                  <p className="text-xs text-muted-foreground">Height</p>
+                  <p className="font-bold text-lg">{nutritionData.heightCm} <span className="text-xs font-normal">cm</span></p>
+                </div>
+              )}
+              {nutritionData.muacCm != null && (
+                <div className="text-center p-2 rounded-lg bg-white border">
+                  <p className="text-xs text-muted-foreground">MUAC</p>
+                  <p className="font-bold text-lg">{nutritionData.muacCm} <span className="text-xs font-normal">cm</span></p>
+                </div>
+              )}
+              {nutritionData.hemoglobin != null && (
+                <div className="text-center p-2 rounded-lg bg-white border">
+                  <p className="text-xs text-muted-foreground">Hemoglobin</p>
+                  <p className="font-bold text-lg">{nutritionData.hemoglobin} <span className="text-xs font-normal">g/dL</span></p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {nutritionData.underweight && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Underweight</Badge>
+              )}
+              {nutritionData.stunting && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Stunting</Badge>
+              )}
+              {nutritionData.wasting && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Wasting</Badge>
+              )}
+              {nutritionData.anemia && (
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Anemia</Badge>
+              )}
+              {!nutritionData.underweight && !nutritionData.stunting && !nutritionData.wasting && !nutritionData.anemia && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">No nutrition flags</Badge>
+              )}
+            </div>
+
+            {!caregiverMode && nutritionData.nutritionScore != null && (
+              <p className="text-xs text-muted-foreground">
+                Nutrition Score: {nutritionData.nutritionScore}/7 (underweight=2, stunting=2, wasting=2, anemia=1)
               </p>
             )}
           </CardContent>

@@ -32,6 +32,8 @@ import MessagesInbox from "@/pages/MessagesInbox";
 import CDPODashboard from "@/pages/CDPODashboard";
 import DWCWEODashboard from "@/pages/DWCWEODashboard";
 import HODashboard from "@/pages/HODashboard";
+import EnvironmentAssessment from "@/pages/EnvironmentAssessment";
+import ReferralManagement from "@/pages/ReferralManagement";
 import NotFound from "@/pages/not-found";
 
 // ws connection manager
@@ -100,6 +102,9 @@ function Router() {
         <ProtectedRoute component={ConductScreening} allowedRoles={['field_worker', 'supervisor']} />
       </Route>
 
+      <Route path="/patients/:id/environment">
+        <ProtectedRoute component={EnvironmentAssessment} allowedRoles={['field_worker', 'supervisor', 'admin']} />
+      </Route>
       <Route path="/patients/:id/progress">
         <ProtectedRoute component={PatientProgress} allowedRoles={ALL_ROLES} />
       </Route>
@@ -128,6 +133,10 @@ function Router() {
       </Route>
       <Route path="/ho-dashboard">
         <ProtectedRoute component={HODashboard} allowedRoles={['higher_official', 'admin']} />
+      </Route>
+
+      <Route path="/referrals">
+        <ProtectedRoute component={ReferralManagement} allowedRoles={['supervisor', 'cdpo', 'admin']} />
       </Route>
 
       <Route path="/messages">

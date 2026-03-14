@@ -6,7 +6,7 @@ import { useCreatePatient } from "@/hooks/use-resources";
 import { useAuth } from "@/hooks/use-auth";
 import { z } from "zod";
 import { useLocation } from "wouter";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import ConductScreening from "./ConductScreening";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2, MapPin, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle2, MapPin, ArrowRight, ArrowLeft, Baby } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { T, useLanguage } from "@/hooks/use-language";
 
 const preRegSchema = z.object({
@@ -44,6 +46,12 @@ const formSchema = insertPatientSchema.extend({
   contactNumber: z.string().optional().refine(v => !v || /^[+\d\s\-()]*$/.test(v), "Only numbers, +, -, spaces and () allowed"),
   name: z.string().min(1, "Name is required").max(255, "Name is too long"),
   caregiverName: z.string().min(1, "Caregiver name is required").max(255, "Name is too long"),
+  dob: z.string().optional(),
+  gender: z.enum(["male", "female"]).optional(),
+  modeDelivery: z.enum(["vaginal", "c_section"]).optional(),
+  modeConception: z.enum(["natural", "art"]).optional(),
+  birthStatus: z.enum(["term", "preterm", "post_term"]).optional(),
+  consanguinity: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,7 +63,7 @@ export default function RegisterPatient() {
   const [, setLocation] = useLocation();
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [assessmentId, setAssessmentId] = useState<string | null>(null);
-  const [step, setStep] = useState<"pre-reg" | "details">("pre-reg");
+  const [step, setStep] = useState<"pre-reg" | "details" | "birth-history">("pre-reg");
   const [preRegData, setPreRegData] = useState<PreRegValues | null>(null);
 
   const uniqueDistricts = DISTRICTS;
@@ -83,11 +91,35 @@ export default function RegisterPatient() {
       name: "",
       caregiverName: "",
       ageMonths: 0,
+      dob: "",
+      gender: undefined,
       contactNumber: "",
       address: "",
       registeredByUserId: user?.id,
+      modeDelivery: undefined,
+      modeConception: undefined,
+      birthStatus: undefined,
+      consanguinity: false,
     },
   });
+
+  // Auto-calculate age from DOB
+  const dobValue = form.watch("dob");
+  const computedAge = useMemo(() => {
+    if (!dobValue) return null;
+    const birth = new Date(dobValue);
+    if (isNaN(birth.getTime())) return null;
+    const now = new Date();
+    const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    return Math.max(0, months);
+  }, [dobValue]);
+
+  // Sync computed age to form when DOB changes
+  useEffect(() => {
+    if (computedAge !== null) {
+      form.setValue("ageMonths", computedAge);
+    }
+  }, [computedAge, form]);
 
   function onSubmit(values: FormValues) {
     mutate({
@@ -149,7 +181,7 @@ export default function RegisterPatient() {
               <CardTitle><T>Location & Identification</T></CardTitle>
             </div>
             <CardDescription>
-              <T>Step 1 of 2 - Select the district, block, and enter the patient ID number.</T>
+              <T>Step 1 of 3 - Select the district, block, and enter the patient ID number.</T>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,6 +286,166 @@ export default function RegisterPatient() {
     );
   }
 
+  // Step 3: Birth History (optional) — must be checked before step 2 falls through
+  if (step === "birth-history") return (
+    <div className="max-w-2xl mx-auto py-8 px-4">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground"><T>Register New Patient</T></h1>
+        <p className="text-muted-foreground mt-2">
+          <T>Birth history helps with risk assessment. All fields are optional.</T>
+        </p>
+      </div>
+
+      {preRegData && (
+        <div className="mb-4 p-3 bg-muted/50 rounded-lg flex items-center gap-3 text-sm">
+          <MapPin className="w-4 h-4 text-purple-500 shrink-0" />
+          <span>
+            <span className="font-medium">{preRegData.district}</span>
+            {" / "}
+            <span className="font-medium">{preRegData.block}</span>
+            {" — "}
+            <span className="font-medium">{form.getValues("name") || "Patient"}</span>
+          </span>
+        </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Baby className="w-5 h-5 text-pink-500" />
+            <CardTitle><T>Birth History</T></CardTitle>
+          </div>
+          <CardDescription>
+            <T>Step 3 of 3 - Optional birth details for comprehensive risk assessment.</T>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="modeDelivery"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel><T>Mode of Delivery</T></FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("Select")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="vaginal"><T>Vaginal</T></SelectItem>
+                          <SelectItem value="c_section"><T>C-Section</T></SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="modeConception"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel><T>Mode of Conception</T></FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("Select")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="natural"><T>Natural</T></SelectItem>
+                          <SelectItem value="art"><T>ART (IVF/Assisted)</T></SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="birthStatus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel><T>Birth Status</T></FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("Select")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="term"><T>Full Term</T></SelectItem>
+                          <SelectItem value="preterm"><T>Pre-term</T></SelectItem>
+                          <SelectItem value="post_term"><T>Post-term</T></SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="consanguinity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel><T>Consanguinity (Related Parents)</T></FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(v) => field.onChange(v === "yes")}
+                          value={field.value ? "yes" : "no"}
+                          className="flex gap-4 pt-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="no" id="consang-no" />
+                            <Label htmlFor="consang-no"><T>No</T></Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="yes" id="consang-yes" />
+                            <Label htmlFor="consang-yes"><T>Yes</T></Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex justify-between gap-4 pt-4">
+                <Button type="button" variant="outline" onClick={() => setStep("details")}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <T>Back</T>
+                </Button>
+                <div className="flex gap-4">
+                  <Button type="button" variant="ghost" onClick={() => {
+                    form.setValue("modeDelivery", undefined);
+                    form.setValue("modeConception", undefined);
+                    form.setValue("birthStatus", undefined);
+                    form.setValue("consanguinity", false);
+                    form.handleSubmit(onSubmit)();
+                  }}>
+                    <T>Skip & Register</T>
+                  </Button>
+                  <Button type="submit" disabled={isPending} className="min-w-[150px]">
+                    {isPending ? t("Registering...") : t("Register & Continue")}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   // Step 2: Patient Details
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
@@ -290,7 +482,7 @@ export default function RegisterPatient() {
         <CardHeader>
           <CardTitle><T>Patient Details</T></CardTitle>
           <CardDescription>
-            <T>Step 2 of 2 - Enter the basic information for the patient and their emergency contact.</T>
+            <T>Step 2 of 3 - Enter the basic information for the patient and their emergency contact.</T>
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -318,13 +510,57 @@ export default function RegisterPatient() {
 
                   <FormField
                     control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel><T>Gender</T></FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("Select gender")} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="male"><T>Male</T></SelectItem>
+                            <SelectItem value="female"><T>Female</T></SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="dob"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel><T>Date of Birth</T></FormLabel>
+                        <FormControl>
+                          <Input type="date" max={new Date().toISOString().split('T')[0]} {...field} value={field.value || ''} />
+                        </FormControl>
+                        {computedAge !== null && (
+                          <p className="text-xs text-muted-foreground"><T>Calculated age</T>: {computedAge} <T>months</T></p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="ageMonths"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel><T>Age (Months)</T></FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 12" min={0} max={80} {...field} />
+                          <Input type="number" placeholder="e.g. 12" min={0} max={80} {...field} disabled={computedAge !== null} />
                         </FormControl>
+                        {computedAge !== null && (
+                          <p className="text-xs text-muted-foreground"><T>Auto-calculated from DOB</T></p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -390,8 +626,13 @@ export default function RegisterPatient() {
                   <Button type="button" variant="outline" onClick={() => form.reset()}>
                     <T>Reset</T>
                   </Button>
-                  <Button type="submit" disabled={isPending} className="min-w-[150px]">
-                    {isPending ? t("Registering...") : t("Register & Continue")}
+                  <Button type="button" onClick={() => {
+                    form.trigger(["name", "ageMonths", "caregiverName"]).then(valid => {
+                      if (valid) setStep("birth-history");
+                    });
+                  }} className="min-w-[150px]">
+                    <T>Next</T>
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
               </div>

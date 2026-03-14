@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Globe, Brain, TrendingUp, Users, Filter, MapPin, Building2 } from "lucide-react";
-import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters } from "@/hooks/use-resources";
+import { Globe, Brain, TrendingUp, Users, Filter, MapPin, Building2, Apple, FileText } from "lucide-react";
+import { useScopedStats, useAIPerformance, useDistrictComparison, useCenters, useNutritionStats, useReferralPipelineStats, useOutcomeStats, useEnvironmentStats } from "@/hooks/use-resources";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ScatterChart, Scatter, Cell, ZAxis } from "recharts";
 import { DISTRICTS } from "@shared/constants";
 import DWCWEODashboard from "./DWCWEODashboard";
@@ -25,6 +25,10 @@ export default function HODashboard() {
   const { data: aiPerf } = useAIPerformance();
   const { data: districtComp } = useDistrictComparison();
   const { data: centersList } = useCenters();
+  const { data: nutritionStats } = useNutritionStats();
+  const { data: referralStats } = useReferralPipelineStats();
+  const { data: outcomeStats } = useOutcomeStats();
+  const { data: environmentStats } = useEnvironmentStats();
 
   const uniqueDistricts = DISTRICTS;
 
@@ -411,6 +415,58 @@ export default function HODashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Phase 7: State-level Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {nutritionStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><Apple className="w-4 h-4 text-green-600" /> Nutrition</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Underweight</span><span className="font-bold text-red-600">{nutritionStats.underweightPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Stunting</span><span className="font-bold">{nutritionStats.stuntingPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Anemia</span><span className="font-bold">{nutritionStats.anemiaPct}%</span></div>
+            </CardContent>
+          </Card>
+        )}
+        {referralStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><FileText className="w-4 h-4 text-blue-600" /> Referrals</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Total</span><span className="font-bold">{referralStats.total}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Pending</span><span className="font-bold text-amber-600">{referralStats.pending}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Completed</span><span className="font-bold text-green-600">{referralStats.completed}</span></div>
+            </CardContent>
+          </Card>
+        )}
+        {outcomeStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="w-4 h-4 text-green-600" /> Outcomes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Improved</span><span className="font-bold text-green-600">{outcomeStats.improvedPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Exited High Risk</span><span className="font-bold">{outcomeStats.exitedHighRisk}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Avg Delay Reduction</span><span className="font-bold">{outcomeStats.avgDelayReduction} mo</span></div>
+            </CardContent>
+          </Card>
+        )}
+        {environmentStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><MapPin className="w-4 h-4 text-blue-600" /> Environment</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Avg Interaction</span><span className="font-bold">{environmentStats.avgInteraction}/10</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">No Safe Water</span><span className="font-bold text-red-600">{environmentStats.noSafeWaterPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">High Risk</span><span className="font-bold text-red-600">{environmentStats.highRiskPct}%</span></div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

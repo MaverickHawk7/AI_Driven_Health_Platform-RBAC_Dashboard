@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, TrendingUp, AlertTriangle, BarChart3, ArrowRight, Filter, Building2 } from "lucide-react";
-import { useScopedStats, useAlerts, useAlertCounts, useBlockTrends, useCenters } from "@/hooks/use-resources";
+import { MapPin, TrendingUp, AlertTriangle, BarChart3, ArrowRight, Filter, Building2, Apple } from "lucide-react";
+import { useScopedStats, useAlerts, useAlertCounts, useBlockTrends, useCenters, useNutritionStats, useEnvironmentStats } from "@/hooks/use-resources";
 import { Link } from "wouter";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 import CDPODashboard from "./CDPODashboard";
@@ -23,6 +23,8 @@ export default function DWCWEODashboard({ embedded }: { embedded?: boolean } = {
   const { data: escalatedAlerts } = useAlerts({ type: "supervisor_escalation", status: "active" });
   const { data: blockTrends } = useBlockTrends();
   const { data: centersList } = useCenters();
+  const { data: nutritionStats } = useNutritionStats();
+  const { data: environmentStats } = useEnvironmentStats();
 
   // Derive unique district (current) and blocks from centers
   const currentDistrict = centersList?.[0]?.district ?? "—";
@@ -381,6 +383,38 @@ export default function DWCWEODashboard({ embedded }: { embedded?: boolean } = {
           )}
         </CardContent>
       </Card>
+
+      {/* Phase 7: District Nutrition & Environment Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {nutritionStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><Apple className="w-4 h-4 text-green-600" /> District Nutrition</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Assessments</span><span className="font-bold">{nutritionStats.totalAssessments}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Underweight</span><span className="font-bold text-red-600">{nutritionStats.underweightPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Stunting</span><span className="font-bold text-amber-600">{nutritionStats.stuntingPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Wasting</span><span className="font-bold text-red-600">{nutritionStats.wastingPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Anemia</span><span className="font-bold text-amber-600">{nutritionStats.anemiaPct}%</span></div>
+            </CardContent>
+          </Card>
+        )}
+        {environmentStats && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2"><MapPin className="w-4 h-4 text-blue-600" /> Environment Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Assessments</span><span className="font-bold">{environmentStats.totalAssessments}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Avg Interaction</span><span className="font-bold">{environmentStats.avgInteraction}/10</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Avg Stimulation</span><span className="font-bold">{environmentStats.avgStimulation}/10</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">No Safe Water</span><span className="font-bold text-red-600">{environmentStats.noSafeWaterPct}%</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">High Risk</span><span className="font-bold text-red-600">{environmentStats.highRiskPct}%</span></div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

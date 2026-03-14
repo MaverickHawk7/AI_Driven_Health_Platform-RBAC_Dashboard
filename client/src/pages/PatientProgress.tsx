@@ -1,9 +1,9 @@
 import { useRoute, useLocation } from "wouter";
-import { usePatient, usePatientProgress, usePatientPrediction } from "@/hooks/use-resources";
+import { usePatient, usePatientProgress, usePatientPrediction, useOutcomes } from "@/hooks/use-resources";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, BarChart3, Activity, Target, Radar } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, BarChart3, Activity, Target, Radar, CheckCircle2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, ReferenceLine } from "recharts";
 import DomainRadarChart from "@/components/DomainRadarChart";
 
@@ -15,6 +15,7 @@ export default function PatientProgress() {
   const { data: patient } = usePatient(patientId);
   const { data: progress, isLoading } = usePatientProgress(patientId);
   const { data: prediction } = usePatientPrediction(patientId);
+  const { data: outcomes } = useOutcomes(patientId);
 
   if (isLoading) return <div className="p-8">Loading progress data...</div>;
 
@@ -278,6 +279,64 @@ export default function PatientProgress() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      {outcomes && outcomes.length > 0 && (
+        <Card className="border-green-200 bg-green-50/20 dark:bg-green-950/10 dark:border-green-800">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
+              Outcome Milestones
+            </CardTitle>
+            <CardDescription className="text-xs">Intervention effectiveness tracked over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                <p className="text-xs text-muted-foreground">Outcomes Recorded</p>
+                <p className="text-2xl font-bold">{outcomes.length}</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                <p className="text-xs text-muted-foreground">Improved</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {(outcomes as any[]).filter((o: any) => o.improvementStatus === "Improved").length}
+                </p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                <p className="text-xs text-muted-foreground">Exited High Risk</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {(outcomes as any[]).filter((o: any) => o.exitHighRisk).length > 0 ? "Yes" : "No"}
+                </p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-white dark:bg-background border">
+                <p className="text-xs text-muted-foreground">Total Delay Reduction</p>
+                <p className="text-2xl font-bold">
+                  {(outcomes as any[]).reduce((sum: number, o: any) => sum + (o.reductionInDelayMonths || 0), 0)} mo
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {(outcomes as any[]).map((oc: any) => (
+                <div key={oc.id} className="flex items-center gap-3 text-sm border-l-2 pl-3 py-1"
+                  style={{ borderLeftColor: oc.improvementStatus === "Improved" ? "#22c55e" : oc.improvementStatus === "Worsened" ? "#ef4444" : "#f59e0b" }}
+                >
+                  <Badge className={
+                    oc.improvementStatus === "Improved" ? "bg-green-100 text-green-700" :
+                    oc.improvementStatus === "Worsened" ? "bg-red-100 text-red-700" :
+                    "bg-amber-100 text-amber-700"
+                  }>
+                    {oc.improvementStatus}
+                  </Badge>
+                  <span className="text-muted-foreground">
+                    {oc.assessedAt ? new Date(oc.assessedAt).toLocaleDateString() : "Unknown"}
+                  </span>
+                  {oc.domainImprovement && <Badge variant="outline" className="text-xs">Domain+</Badge>}
+                  {oc.exitHighRisk && <Badge variant="outline" className="text-xs bg-green-50 text-green-700">Exited Risk</Badge>}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

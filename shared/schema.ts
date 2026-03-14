@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, date, real } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -35,6 +35,8 @@ export const patients = pgTable("patients", {
   patientIdNumber: text("patient_id_number"),
   name: text("name").notNull(),
   ageMonths: integer("age_months").notNull(),
+  dob: date("dob"),
+  gender: text("gender", { enum: ["male", "female"] }),
   caregiverName: text("caregiver_name").notNull(),
   contactNumber: text("contact_number"),
   address: text("address"),
@@ -42,6 +44,11 @@ export const patients = pgTable("patients", {
   block: text("block"),
   centerId: integer("center_id").references(() => centers.id),
   registeredByUserId: integer("registered_by_user_id").references(() => users.id),
+  // Birth history
+  modeDelivery: text("mode_delivery", { enum: ["vaginal", "c_section"] }),
+  modeConception: text("mode_conception", { enum: ["natural", "art"] }),
+  birthStatus: text("birth_status", { enum: ["term", "preterm", "post_term"] }),
+  consanguinity: boolean("consanguinity").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -57,6 +64,22 @@ export const screenings = pgTable("screenings", {
   baselineScreeningId: integer("baseline_screening_id"),
   domainScores: jsonb("domain_scores"),
   conductedByUserId: integer("conducted_by_user_id").references(() => users.id),
+  // Phase 4: Behaviour & enhanced scoring
+  behaviourConcerns: text("behaviour_concerns"), // comma-separated: "sleep,aggression,feeding"
+  behaviourScore: integer("behaviour_score"),
+  behaviourRiskLevel: text("behaviour_risk_level", { enum: ["Low", "Medium", "High"] }),
+  autismRisk: text("autism_risk", { enum: ["Low", "Moderate", "High"] }),
+  adhdRisk: text("adhd_risk", { enum: ["Low", "Moderate", "High"] }),
+  developmentalStatus: text("developmental_status"), // e.g. "2 delays identified"
+  formulaRiskScore: integer("formula_risk_score"),
+  formulaRiskCategory: text("formula_risk_category", { enum: ["Low", "Medium", "High"] }),
+  // DQ scores (optional, professional level)
+  gmDQ: real("gm_dq"),
+  fmDQ: real("fm_dq"),
+  lcDQ: real("lc_dq"),
+  cogDQ: real("cog_dq"),
+  seDQ: real("se_dq"),
+  compositeDQ: real("composite_dq"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -160,6 +183,75 @@ export const systemConfig = pgTable("system_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const nutritionAssessments = pgTable("nutrition_assessments", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  screeningId: integer("screening_id").references(() => screenings.id),
+  weightKg: real("weight_kg"),
+  heightCm: real("height_cm"),
+  muacCm: real("muac_cm"),
+  hemoglobin: real("hemoglobin"),
+  underweight: boolean("underweight").default(false),
+  stunting: boolean("stunting").default(false),
+  wasting: boolean("wasting").default(false),
+  anemia: boolean("anemia").default(false),
+  nutritionScore: integer("nutrition_score").default(0),
+  nutritionRisk: text("nutrition_risk", { enum: ["Low", "Medium", "High"] }).default("Low"),
+  assessedByUserId: integer("assessed_by_user_id").references(() => users.id),
+  assessedAt: timestamp("assessed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const environmentAssessments = pgTable("environment_assessments", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  parentChildInteraction: integer("parent_child_interaction"),
+  parentMentalHealth: integer("parent_mental_health"),
+  homeStimulation: integer("home_stimulation"),
+  playMaterials: boolean("play_materials").default(false),
+  caregiverEngagement: text("caregiver_engagement", { enum: ["Low", "Medium", "High"] }),
+  languageExposure: text("language_exposure", { enum: ["Adequate", "Inadequate"] }),
+  safeWater: boolean("safe_water").default(true),
+  toiletFacility: boolean("toilet_facility").default(true),
+  environmentScore: integer("environment_score").default(0),
+  environmentRisk: text("environment_risk", { enum: ["Low", "Medium", "High"] }).default("Low"),
+  assessedByUserId: integer("assessed_by_user_id").references(() => users.id),
+  assessedAt: timestamp("assessed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const referrals = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  screeningId: integer("screening_id").references(() => screenings.id),
+  referralTriggered: boolean("referral_triggered").default(false), // auto vs manual
+  referralType: text("referral_type", { enum: ["PHC", "NRC", "DEIC", "RBSK", "AWW_Intervention", "Parent_Intervention"] }).notNull(),
+  referralReason: text("referral_reason", { enum: ["GDD", "Autism", "ADHD", "Behaviour", "Environment", "Domain_Delay", "Nutrition"] }).notNull(),
+  referralStatus: text("referral_status", { enum: ["Pending", "Under_Treatment", "Completed"] }).default("Pending"),
+  referredByUserId: integer("referred_by_user_id").references(() => users.id),
+  referredAt: timestamp("referred_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const outcomeTracking = pgTable("outcome_tracking", {
+  id: serial("id").primaryKey(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  baselineScreeningId: integer("baseline_screening_id").references(() => screenings.id),
+  followupScreeningId: integer("followup_screening_id").references(() => screenings.id),
+  reductionInDelayMonths: integer("reduction_in_delay_months").default(0),
+  domainImprovement: boolean("domain_improvement").default(false),
+  autismRiskChange: text("autism_risk_change", { enum: ["Improved", "Same", "Worsened"] }),
+  exitHighRisk: boolean("exit_high_risk").default(false),
+  improvementStatus: text("improvement_status", { enum: ["Improved", "Same", "Worsened"] }),
+  homeActivitiesAssigned: integer("home_activities_assigned").default(0),
+  followupConducted: boolean("followup_conducted").default(false),
+  assessedByUserId: integer("assessed_by_user_id").references(() => users.id),
+  assessedAt: timestamp("assessed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const supervisorCenterAssignments = pgTable("supervisor_center_assignments", {
   id: serial("id").primaryKey(),
   supervisorId: integer("supervisor_id").references(() => users.id).notNull(),
@@ -216,6 +308,10 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
   interventions: many(interventions),
   interventionPlans: many(interventionPlans),
   consentRecords: many(consentRecords),
+  nutritionAssessments: many(nutritionAssessments),
+  environmentAssessments: many(environmentAssessments),
+  referrals: many(referrals),
+  outcomes: many(outcomeTracking),
 }));
 
 export const screeningsRelations = relations(screenings, ({ one, many }) => ({
@@ -300,6 +396,32 @@ export const alertsRelations = relations(alerts, ({ one }) => ({
   }),
 }));
 
+export const environmentAssessmentsRelations = relations(environmentAssessments, ({ one }) => ({
+  patient: one(patients, {
+    fields: [environmentAssessments.patientId],
+    references: [patients.id],
+  }),
+  assessedBy: one(users, {
+    fields: [environmentAssessments.assessedByUserId],
+    references: [users.id],
+  }),
+}));
+
+export const nutritionAssessmentsRelations = relations(nutritionAssessments, ({ one }) => ({
+  patient: one(patients, {
+    fields: [nutritionAssessments.patientId],
+    references: [patients.id],
+  }),
+  screening: one(screenings, {
+    fields: [nutritionAssessments.screeningId],
+    references: [screenings.id],
+  }),
+  assessedBy: one(users, {
+    fields: [nutritionAssessments.assessedByUserId],
+    references: [users.id],
+  }),
+}));
+
 export const supervisorCenterAssignmentsRelations = relations(supervisorCenterAssignments, ({ one }) => ({
   supervisor: one(users, {
     fields: [supervisorCenterAssignments.supervisorId],
@@ -315,6 +437,19 @@ export const supervisorCenterAssignmentsRelations = relations(supervisorCenterAs
     references: [users.id],
     relationName: "supervisorCenterAssignmentsAssignedBy",
   }),
+}));
+
+export const referralsRelations = relations(referrals, ({ one }) => ({
+  patient: one(patients, { fields: [referrals.patientId], references: [patients.id] }),
+  screening: one(screenings, { fields: [referrals.screeningId], references: [screenings.id] }),
+  referredBy: one(users, { fields: [referrals.referredByUserId], references: [users.id] }),
+}));
+
+export const outcomeTrackingRelations = relations(outcomeTracking, ({ one }) => ({
+  patient: one(patients, { fields: [outcomeTracking.patientId], references: [patients.id] }),
+  baselineScreening: one(screenings, { fields: [outcomeTracking.baselineScreeningId], references: [screenings.id], relationName: "outcomeBaseline" }),
+  followupScreening: one(screenings, { fields: [outcomeTracking.followupScreeningId], references: [screenings.id], relationName: "outcomeFollowup" }),
+  assessedBy: one(users, { fields: [outcomeTracking.assessedByUserId], references: [users.id] }),
 }));
 
 export const messagesRelations = relations(messages, ({ one }) => ({
@@ -341,6 +476,10 @@ export const insertPatientSchema = createInsertSchema(patients).omit({ id: true,
 export const insertScreeningSchema = createInsertSchema(screenings).omit({
   id: true, createdAt: true, riskScore: true, riskLevel: true, photoAnalysis: true,
   baselineScreeningId: true, domainScores: true,
+  // Phase 4: server-computed fields
+  autismRisk: true, adhdRisk: true, developmentalStatus: true,
+  formulaRiskScore: true, formulaRiskCategory: true,
+  compositeDQ: true,
 });
 export const insertInterventionSchema = createInsertSchema(interventions).omit({ id: true, createdAt: true });
 
@@ -355,6 +494,15 @@ export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({ 
 export const insertAlertSchema = createInsertSchema(alerts).omit({ id: true, createdAt: true, acknowledgedAt: true, resolvedAt: true });
 export const insertAlertThresholdSchema = createInsertSchema(alertThresholds).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCenterSchema = createInsertSchema(centers).omit({ id: true, createdAt: true });
+export const insertEnvironmentAssessmentSchema = createInsertSchema(environmentAssessments).omit({
+  id: true, createdAt: true, environmentScore: true, environmentRisk: true,
+});
+export const insertNutritionAssessmentSchema = createInsertSchema(nutritionAssessments).omit({
+  id: true, createdAt: true, underweight: true, stunting: true, wasting: true, anemia: true,
+  nutritionScore: true, nutritionRisk: true,
+});
+export const insertReferralSchema = createInsertSchema(referrals).omit({ id: true, createdAt: true, completedAt: true });
+export const insertOutcomeTrackingSchema = createInsertSchema(outcomeTracking).omit({ id: true, createdAt: true });
 export const insertSupervisorCenterAssignmentSchema = createInsertSchema(supervisorCenterAssignments).omit({ id: true, createdAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, createdAt: true, completedAt: true });
 
@@ -384,6 +532,14 @@ export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type InsertSystemConfig = z.infer<typeof insertSystemConfigSchema>;
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type InsertAlertThreshold = z.infer<typeof insertAlertThresholdSchema>;
+export type NutritionAssessment = typeof nutritionAssessments.$inferSelect;
+export type InsertNutritionAssessment = z.infer<typeof insertNutritionAssessmentSchema>;
+export type EnvironmentAssessment = typeof environmentAssessments.$inferSelect;
+export type InsertEnvironmentAssessment = z.infer<typeof insertEnvironmentAssessmentSchema>;
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
+export type OutcomeTracking = typeof outcomeTracking.$inferSelect;
+export type InsertOutcomeTracking = z.infer<typeof insertOutcomeTrackingSchema>;
 export type Center = typeof centers.$inferSelect;
 export type InsertCenter = z.infer<typeof insertCenterSchema>;
 export type SupervisorCenterAssignment = typeof supervisorCenterAssignments.$inferSelect;

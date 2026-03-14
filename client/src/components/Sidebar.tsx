@@ -16,7 +16,7 @@ import {
   Building2,
   MapPin,
   Globe,
-
+  Home,
   Languages,
   Menu,
   Moon,
@@ -45,6 +45,7 @@ const NAV_ITEMS = [
       { href: "/patients", label: "My Patients", icon: Users },
       { href: "/patients/new", label: "Register Patient", icon: UserPlus },
       { href: "/messages", label: "Messages", icon: MessageSquare },
+      // Home Visits nav — field workers access via patient profile "Record Home Visit" button
     ]
   },
   {
@@ -53,6 +54,7 @@ const NAV_ITEMS = [
       { href: "/dashboard", label: "Overview", icon: Activity },
       { href: "/field-workers", label: "Field Workers", icon: ClipboardList },
       { href: "/patients", label: "Patient Registry", icon: Users },
+      { href: "/referrals", label: "Referrals", icon: FileText },
       { href: "/messages", label: "Messages", icon: MessageSquare },
       { href: "/alerts", label: "Alerts", icon: Bell },
       { href: "/analytics", label: "Analytics", icon: TrendingUp },
@@ -64,6 +66,7 @@ const NAV_ITEMS = [
       { href: "/cdpo-dashboard", label: "Block Dashboard", icon: Building2 },
       { href: "/field-workers", label: "Field Workers", icon: ClipboardList },
       { href: "/patients", label: "Patient Registry", icon: Users },
+      { href: "/referrals", label: "Referrals", icon: FileText },
       { href: "/messages", label: "Messages", icon: MessageSquare },
       { href: "/alerts", label: "Alerts", icon: Bell },
       { href: "/reports", label: "Reports", icon: FileText },
@@ -93,6 +96,7 @@ const NAV_ITEMS = [
     role: ["admin"],
     items: [
       { href: "/admin", label: "User Management", icon: Settings },
+      { href: "/referrals", label: "Referrals", icon: FileText },
       { href: "/messages", label: "Messages", icon: MessageSquare },
       { href: "/analytics", label: "Analytics", icon: BarChart3 },
       { href: "/alerts", label: "Alerts", icon: Bell },

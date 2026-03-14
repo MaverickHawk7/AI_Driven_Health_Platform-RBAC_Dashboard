@@ -5,7 +5,7 @@ import { requireAuth } from "./auth";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { type DomainScores } from "@shared/schema";
-import { analyzeScreening } from "./services/ai/riskAnalyzer";
+import { analyzeScreening, computeBehaviourScore, computeFormulaScore } from "./services/ai/riskAnalyzer";
 import { analyzePhoto } from "./services/ai/visionAnalyzer";
 import { generateAllInterventionPlans } from "./services/ai/interventionRecommender";
 import { logAudit } from "./services/auditLogger";
@@ -446,6 +446,39 @@ export async function registerRoutes(
         if (baseline) baselineScreeningId = baseline.id;
       }
 
+      // Phase 4: Behaviour scoring
+      let behaviourConcerns: string | undefined;
+      let behaviourScore: number | undefined;
+      let behaviourRiskLevel: string | undefined;
+      if ((input as any).behaviourConcerns) {
+        const concerns = (input as any).behaviourConcerns as string[];
+        if (concerns.length > 0) {
+          const bResult = computeBehaviourScore(concerns);
+          behaviourConcerns = bResult.behaviourConcerns;
+          behaviourScore = bResult.behaviourScore;
+          behaviourRiskLevel = bResult.behaviourRiskLevel;
+        }
+      }
+
+      // Phase 4: Fetch nutrition/environment context for formula score
+      let nutritionRisk: string | null = null;
+      let environmentRisk: string | null = null;
+      try {
+        const nutritionList = await storage.getNutritionAssessments(input.patientId);
+        if (nutritionList.length > 0) nutritionRisk = nutritionList[0].nutritionRisk;
+        const envList = await storage.getEnvironmentAssessments(input.patientId);
+        if (envList.length > 0) environmentRisk = envList[0].environmentRisk;
+      } catch { /* non-critical */ }
+
+      // Phase 4: Deterministic formula score
+      const formula = computeFormulaScore({
+        domainScores: domainScores as Record<string, number> | null,
+        conditionIndicators,
+        behaviourRiskLevel: behaviourRiskLevel ?? null,
+        nutritionRisk,
+        environmentRisk,
+      });
+
       // auto-create intv if high risk
       if (riskLevel === "High") {
         await storage.createIntervention({
@@ -459,19 +492,79 @@ export async function registerRoutes(
         });
       }
 
+      // Phase 5: Auto-referral logic (runs in background, non-blocking)
+      (async () => {
+        try {
+          const userId = input.conductedByUserId ?? undefined;
+          // High risk → RBSK/DEIC referral
+          if (riskLevel === "High") {
+            await storage.createReferral({
+              patientId: input.patientId, referralTriggered: true,
+              referralType: "RBSK", referralReason: "Domain_Delay",
+              referredByUserId: userId, notes: "Auto-generated: High risk screening result",
+            });
+          }
+          // Autism indicators ≥ 40%
+          if (conditionIndicators) {
+            const autism = conditionIndicators.find(c => c.condition === "Autism Spectrum Indicators");
+            if (autism && autism.confidence >= 40) {
+              await storage.createReferral({
+                patientId: input.patientId, referralTriggered: true,
+                referralType: "DEIC", referralReason: "Autism",
+                referredByUserId: userId, notes: `Auto-generated: Autism indicators at ${autism.confidence}%`,
+              });
+            }
+            const adhd = conditionIndicators.find(c => c.condition === "ADHD Indicators");
+            if (adhd && adhd.confidence >= 40) {
+              await storage.createReferral({
+                patientId: input.patientId, referralTriggered: true,
+                referralType: "PHC", referralReason: "ADHD",
+                referredByUserId: userId, notes: `Auto-generated: ADHD indicators at ${adhd.confidence}%`,
+              });
+            }
+          }
+          // Nutrition High Risk → NRC
+          if (nutritionRisk === "High") {
+            await storage.createReferral({
+              patientId: input.patientId, referralTriggered: true,
+              referralType: "NRC", referralReason: "Nutrition",
+              referredByUserId: userId, notes: "Auto-generated: High nutrition risk",
+            });
+          }
+          // Behaviour High → PHC
+          if (behaviourRiskLevel === "High") {
+            await storage.createReferral({
+              patientId: input.patientId, referralTriggered: true,
+              referralType: "PHC", referralReason: "Behaviour",
+              referredByUserId: userId, notes: "Auto-generated: High behaviour risk",
+            });
+          }
+        } catch (err) {
+          console.error("[routes] Auto-referral creation failed:", err);
+        }
+      })();
+
       const screening = await storage.createScreening({
         ...input,
         riskScore,
         riskLevel,
         domainScores,
         baselineScreeningId,
+        behaviourConcerns: behaviourConcerns ?? null,
+        behaviourScore: behaviourScore ?? null,
+        behaviourRiskLevel: (behaviourRiskLevel as any) ?? null,
+        autismRisk: (formula.autismRisk as any) ?? null,
+        adhdRisk: (formula.adhdRisk as any) ?? null,
+        developmentalStatus: formula.developmentalStatus ?? null,
+        formulaRiskScore: formula.formulaRiskScore ?? null,
+        formulaRiskCategory: (formula.formulaRiskCategory as any) ?? null,
       });
 
       logAudit({
         action: "create",
         resourceType: "screening",
         resourceId: String(screening.id),
-        details: { patientId: input.patientId, riskLevel, riskScore, source },
+        details: { patientId: input.patientId, riskLevel, riskScore, source, formulaRiskScore: formula.formulaRiskScore },
       });
 
       evaluateAlertTriggers({
@@ -489,6 +582,178 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
+      throw err;
+    }
+  });
+
+  // === Nutrition Assessments ===
+  app.get(api.nutritionAssessments.list.path, async (req, res) => {
+    const patientId = req.query.patientId ? Number(req.query.patientId) : undefined;
+    const assessments = await storage.getNutritionAssessments(patientId);
+    res.json(assessments);
+  });
+
+  app.post(api.nutritionAssessments.create.path, async (req, res) => {
+    try {
+      const input = api.nutritionAssessments.create.input.parse(req.body);
+
+      // Look up patient for age/gender
+      const patient = await storage.getPatient(input.patientId);
+      if (!patient) return res.status(404).json({ message: "Patient not found" });
+
+      const { computeNutritionFlags } = await import("./services/nutritionCalculator");
+      const flags = computeNutritionFlags(
+        patient.ageMonths,
+        (patient as any).gender || null,
+        input.weightKg ?? null,
+        input.heightCm ?? null,
+        input.hemoglobin ?? null,
+      );
+
+      const record = await storage.createNutritionAssessment({
+        ...input,
+        ...flags,
+      });
+
+      logAudit({
+        action: "create",
+        resourceType: "nutrition_assessment",
+        resourceId: String(record.id),
+        details: { patientId: input.patientId, nutritionRisk: flags.nutritionRisk, nutritionScore: flags.nutritionScore },
+      });
+
+      invalidateCache("stats", "patients:*").catch(() => {});
+
+      res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  // === Environment Assessments ===
+  app.get(api.environmentAssessments.list.path, async (req, res) => {
+    const patientId = req.query.patientId ? Number(req.query.patientId) : undefined;
+    const assessments = await storage.getEnvironmentAssessments(patientId);
+    res.json(assessments);
+  });
+
+  app.post(api.environmentAssessments.create.path, async (req, res) => {
+    try {
+      const input = api.environmentAssessments.create.input.parse(req.body);
+
+      // Compute environment risk score
+      let score = 0;
+      // Parent mental health concerns (0-10, higher = more concerns)
+      if (input.parentMentalHealth != null && input.parentMentalHealth > 7) score += 3;
+      else if (input.parentMentalHealth != null && input.parentMentalHealth > 4) score += 1;
+      // Low stimulation
+      if (input.homeStimulation != null && input.homeStimulation < 4) score += 2;
+      else if (input.homeStimulation != null && input.homeStimulation < 6) score += 1;
+      // Low interaction
+      if (input.parentChildInteraction != null && input.parentChildInteraction < 4) score += 2;
+      else if (input.parentChildInteraction != null && input.parentChildInteraction < 6) score += 1;
+      // No play materials
+      if (!input.playMaterials) score += 1;
+      // Low engagement
+      if (input.caregiverEngagement === "Low") score += 2;
+      else if (input.caregiverEngagement === "Medium") score += 1;
+      // Inadequate language
+      if (input.languageExposure === "Inadequate") score += 1;
+      // No safe water
+      if (!input.safeWater) score += 2;
+      // No toilet
+      if (!input.toiletFacility) score += 1;
+
+      const environmentRisk: string = score >= 7 ? "High" : score >= 3 ? "Medium" : "Low";
+
+      const record = await storage.createEnvironmentAssessment({
+        ...input,
+        environmentScore: score,
+        environmentRisk,
+      });
+
+      logAudit({
+        action: "create",
+        resourceType: "environment_assessment",
+        resourceId: String(record.id),
+        details: { patientId: input.patientId, environmentRisk, environmentScore: score },
+      });
+
+      invalidateCache("stats", "patients:*").catch(() => {});
+
+      res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+  // === Referrals ===
+  app.get(api.referrals.list.path, async (req, res) => {
+    const patientId = req.query.patientId ? Number(req.query.patientId) : undefined;
+    const status = req.query.status ? String(req.query.status) : undefined;
+    const list = await storage.getReferrals(patientId, status);
+    res.json(list);
+  });
+
+  app.post(api.referrals.create.path, async (req, res) => {
+    try {
+      const input = api.referrals.create.input.parse(req.body);
+      const record = await storage.createReferral(input);
+      logAudit({
+        action: "create", resourceType: "referral", resourceId: String(record.id),
+        details: { patientId: input.patientId, referralType: input.referralType, referralReason: input.referralReason },
+      });
+      invalidateCache("stats", "patients:*").catch(() => {});
+      res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  app.patch(api.referrals.update.path, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const input = api.referrals.update.input.parse(req.body);
+      const completedAt = input.referralStatus === "Completed" ? new Date() : undefined;
+      const record = await storage.updateReferral(id, { ...input, completedAt });
+      logAudit({
+        action: "update", resourceType: "referral", resourceId: String(id),
+        details: { referralStatus: input.referralStatus },
+      });
+      invalidateCache("stats", "patients:*").catch(() => {});
+      res.json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      throw err;
+    }
+  });
+
+  // === Outcomes ===
+  app.get(api.outcomes.list.path, async (req, res) => {
+    const patientId = req.query.patientId ? Number(req.query.patientId) : undefined;
+    const list = await storage.getOutcomes(patientId);
+    res.json(list);
+  });
+
+  app.post(api.outcomes.create.path, async (req, res) => {
+    try {
+      const input = api.outcomes.create.input.parse(req.body);
+      const record = await storage.createOutcome(input);
+      logAudit({
+        action: "create", resourceType: "outcome", resourceId: String(record.id),
+        details: { patientId: input.patientId, improvementStatus: input.improvementStatus },
+      });
+      invalidateCache("stats", "patients:*").catch(() => {});
+      res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
       throw err;
     }
   });
@@ -1036,6 +1301,63 @@ export async function registerRoutes(
     const cacheKey = `stats:scoped:${user.role}:${user.id}:${qDistrict || ""}:${qBlock || ""}:${qCenterId || ""}`;
     const stats = await cacheWrap(cacheKey, 1800, () => storage.getScopedProgramStats(scope));
     res.json(stats);
+  });
+
+  // === Phase 7: Aggregation Stats ===
+  app.get(api.stats.nutrition.path, async (_req, res) => {
+    const all = await storage.getNutritionAssessments();
+    const total = all.length || 1;
+    res.json({
+      totalAssessments: all.length,
+      underweightPct: Math.round((all.filter((a: any) => a.underweight).length / total) * 100),
+      stuntingPct: Math.round((all.filter((a: any) => a.stunting).length / total) * 100),
+      wastingPct: Math.round((all.filter((a: any) => a.wasting).length / total) * 100),
+      anemiaPct: Math.round((all.filter((a: any) => a.anemia).length / total) * 100),
+      highRiskPct: Math.round((all.filter((a: any) => a.nutritionRisk === "High").length / total) * 100),
+    });
+  });
+
+  app.get(api.stats.referralPipeline.path, async (_req, res) => {
+    const all = await storage.getReferrals();
+    const byType = new Map<string, number>();
+    for (const r of all) {
+      byType.set(r.referralType, (byType.get(r.referralType) || 0) + 1);
+    }
+    res.json({
+      total: all.length,
+      pending: all.filter((r: any) => r.referralStatus === "Pending").length,
+      underTreatment: all.filter((r: any) => r.referralStatus === "Under_Treatment").length,
+      completed: all.filter((r: any) => r.referralStatus === "Completed").length,
+      byType: Array.from(byType.entries()).map(([type, count]) => ({ type, count })),
+    });
+  });
+
+  app.get(api.stats.outcomeSummary.path, async (_req, res) => {
+    const all = await storage.getOutcomes();
+    const total = all.length || 1;
+    const totalDelay = all.reduce((s: number, o: any) => s + (o.reductionInDelayMonths || 0), 0);
+    res.json({
+      totalOutcomes: all.length,
+      improvedPct: Math.round((all.filter((o: any) => o.improvementStatus === "Improved").length / total) * 100),
+      samePct: Math.round((all.filter((o: any) => o.improvementStatus === "Same").length / total) * 100),
+      worsenedPct: Math.round((all.filter((o: any) => o.improvementStatus === "Worsened").length / total) * 100),
+      exitedHighRisk: all.filter((o: any) => o.exitHighRisk).length,
+      avgDelayReduction: all.length > 0 ? Math.round((totalDelay / all.length) * 10) / 10 : 0,
+    });
+  });
+
+  app.get(api.stats.environment.path, async (_req, res) => {
+    const all = await storage.getEnvironmentAssessments();
+    const total = all.length || 1;
+    const avgInteraction = all.length > 0 ? Math.round((all.reduce((s: number, a: any) => s + (a.parentChildInteraction || 0), 0) / all.length) * 10) / 10 : 0;
+    const avgStimulation = all.length > 0 ? Math.round((all.reduce((s: number, a: any) => s + (a.homeStimulation || 0), 0) / all.length) * 10) / 10 : 0;
+    res.json({
+      totalAssessments: all.length,
+      avgInteraction,
+      avgStimulation,
+      noSafeWaterPct: Math.round((all.filter((a: any) => !a.safeWater).length / total) * 100),
+      highRiskPct: Math.round((all.filter((a: any) => a.environmentRisk === "High").length / total) * 100),
+    });
   });
 
   // === Locations (unique blocks/districts) ===

@@ -3,8 +3,11 @@ import {
   insertPatientSchema, insertScreeningSchema, insertUserSchema, insertInterventionSchema,
   insertInterventionPlanSchema, insertActivityLogSchema, insertConsentRecordSchema,
   insertSupervisorCenterAssignmentSchema, insertMessageSchema, insertCenterSchema,
+  insertNutritionAssessmentSchema, insertEnvironmentAssessmentSchema,
+  insertReferralSchema, insertOutcomeTrackingSchema,
   patients, screenings, interventions, users, interventionPlans, activityLogs, consentRecords, auditLogs,
-  alerts, alertThresholds, supervisorCenterAssignments, messages, centers,
+  alerts, alertThresholds, supervisorCenterAssignments, messages, centers, nutritionAssessments,
+  environmentAssessments, referrals, outcomeTracking,
 } from './schema';
 
 export const errorSchemas = {
@@ -497,6 +500,103 @@ export const api = {
       },
     },
   },
+  nutritionAssessments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/nutrition-assessments',
+      input: z.object({
+        patientId: z.coerce.number().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof nutritionAssessments.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/nutrition-assessments',
+      input: insertNutritionAssessmentSchema,
+      responses: {
+        201: z.custom<typeof nutritionAssessments.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  environmentAssessments: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/environment-assessments',
+      input: z.object({
+        patientId: z.coerce.number().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof environmentAssessments.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/environment-assessments',
+      input: insertEnvironmentAssessmentSchema,
+      responses: {
+        201: z.custom<typeof environmentAssessments.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
+  referrals: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/referrals',
+      input: z.object({
+        patientId: z.coerce.number().optional(),
+        status: z.string().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof referrals.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/referrals',
+      input: insertReferralSchema,
+      responses: {
+        201: z.custom<typeof referrals.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/referrals/:id',
+      input: z.object({
+        referralStatus: z.enum(["Pending", "Under_Treatment", "Completed"]).optional(),
+        notes: z.string().optional(),
+      }),
+      responses: {
+        200: z.custom<typeof referrals.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+  },
+  outcomes: {
+    list: {
+      method: 'GET' as const,
+      path: '/api/outcomes',
+      input: z.object({
+        patientId: z.coerce.number().optional(),
+      }).optional(),
+      responses: {
+        200: z.array(z.custom<typeof outcomeTracking.$inferSelect>()),
+      },
+    },
+    create: {
+      method: 'POST' as const,
+      path: '/api/outcomes',
+      input: insertOutcomeTrackingSchema,
+      responses: {
+        201: z.custom<typeof outcomeTracking.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
   reports: {
     district: {
       method: 'GET' as const,
@@ -591,6 +691,60 @@ export const api = {
       path: '/api/stats/scoped',
       responses: {
         200: z.custom<any>(),
+      },
+    },
+    nutrition: {
+      method: 'GET' as const,
+      path: '/api/stats/nutrition',
+      responses: {
+        200: z.object({
+          totalAssessments: z.number(),
+          underweightPct: z.number(),
+          stuntingPct: z.number(),
+          wastingPct: z.number(),
+          anemiaPct: z.number(),
+          highRiskPct: z.number(),
+        }),
+      },
+    },
+    referralPipeline: {
+      method: 'GET' as const,
+      path: '/api/stats/referrals',
+      responses: {
+        200: z.object({
+          total: z.number(),
+          pending: z.number(),
+          underTreatment: z.number(),
+          completed: z.number(),
+          byType: z.array(z.object({ type: z.string(), count: z.number() })),
+        }),
+      },
+    },
+    outcomeSummary: {
+      method: 'GET' as const,
+      path: '/api/stats/outcomes',
+      responses: {
+        200: z.object({
+          totalOutcomes: z.number(),
+          improvedPct: z.number(),
+          samePct: z.number(),
+          worsenedPct: z.number(),
+          exitedHighRisk: z.number(),
+          avgDelayReduction: z.number(),
+        }),
+      },
+    },
+    environment: {
+      method: 'GET' as const,
+      path: '/api/stats/environment',
+      responses: {
+        200: z.object({
+          totalAssessments: z.number(),
+          avgInteraction: z.number(),
+          avgStimulation: z.number(),
+          noSafeWaterPct: z.number(),
+          highRiskPct: z.number(),
+        }),
       },
     },
   },
