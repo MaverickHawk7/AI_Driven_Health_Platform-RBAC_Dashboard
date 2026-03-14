@@ -125,6 +125,7 @@ export default function RegisterPatient() {
     // Clean up empty strings for optional fields before sending to API
     const cleaned = {
       ...values,
+      ageMonths: Number(values.ageMonths),
       dob: values.dob || undefined,
       gender: values.gender || undefined,
       contactNumber: values.contactNumber || undefined,

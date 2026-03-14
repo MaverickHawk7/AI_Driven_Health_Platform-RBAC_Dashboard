@@ -451,7 +451,8 @@ export async function registerRoutes(
       let behaviourScore: number | undefined;
       let behaviourRiskLevel: string | undefined;
       if ((input as any).behaviourConcerns) {
-        const concerns = (input as any).behaviourConcerns as string[];
+        const raw = String((input as any).behaviourConcerns);
+        const concerns = raw.split(",").map((s: string) => s.trim()).filter(Boolean);
         if (concerns.length > 0) {
           const bResult = computeBehaviourScore(concerns);
           behaviourConcerns = bResult.behaviourConcerns;

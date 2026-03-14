@@ -324,10 +324,10 @@ export default function ConductScreening({ patientId: propPatientId }: ConductSc
     }
 
     mutate({
-      patientId: form.getValues().patientId,
+      patientId: Number(form.getValues().patientId),
       answers: answersMap,
       conductedByUserId: user?.id,
-      screeningType: form.getValues().screeningType,
+      screeningType: form.getValues().screeningType || "baseline",
       behaviourConcerns: behaviourConcerns.length > 0 ? behaviourConcerns.join(",") : undefined,
     } as any, {
       onSuccess: (data) => {
