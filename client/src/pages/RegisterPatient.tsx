@@ -122,13 +122,22 @@ export default function RegisterPatient() {
   }, [computedAge, form]);
 
   function onSubmit(values: FormValues) {
-    mutate({
+    // Clean up empty strings for optional fields before sending to API
+    const cleaned = {
       ...values,
+      dob: values.dob || undefined,
+      gender: values.gender || undefined,
+      contactNumber: values.contactNumber || undefined,
+      address: values.address || undefined,
+      modeDelivery: values.modeDelivery || undefined,
+      modeConception: values.modeConception || undefined,
+      birthStatus: values.birthStatus || undefined,
       registeredByUserId: user?.id,
       district: preRegData?.district,
       block: preRegData?.block,
       patientIdNumber: preRegData?.patientIdNumber,
-    }, {
+    };
+    mutate(cleaned, {
       onSuccess: (data) => {
         setAssessmentId(data.id.toString());
         setAnalysisComplete(true);
