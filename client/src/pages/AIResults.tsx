@@ -334,7 +334,7 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
-      <Button variant="ghost" onClick={() => setLocation("/field-worker/home")} className="gap-2 mb-4">
+      <Button variant="ghost" onClick={() => onComplete ? onComplete() : setLocation("/field-worker/home")} className="gap-2 mb-4">
         <ArrowLeft className="w-4 h-4" />
         Back to Dashboard
       </Button>
@@ -932,13 +932,13 @@ export default function AIResults({ assessmentId: propId, onComplete, riskScore,
 
       <div className="flex flex-wrap justify-end gap-4">
         {showInterventionPlanButton && (
-          <Button variant="outline" onClick={() => setLocation(`/intervention-plans/${patientId}`)} className="gap-2">
+          <Button variant="outline" onClick={() => setLocation(`/intervention-plans/${patientId}`, onComplete ? { replace: true } : undefined)} className="gap-2">
             <FileText className="w-4 h-4" />
             View Intervention Plans
           </Button>
         )}
         {patientId && (
-          <Button variant="outline" onClick={() => setLocation(`/patients/${patientId}/progress`)} className="gap-2">
+          <Button variant="outline" onClick={() => setLocation(`/patients/${patientId}/progress`, onComplete ? { replace: true } : undefined)} className="gap-2">
             <TrendingUp className="w-4 h-4" />
             View Progress
           </Button>

@@ -566,7 +566,18 @@ export default function RegisterPatient() {
                       <FormItem>
                         <FormLabel><T>Age (Months)</T></FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 12" min={0} max={80} {...field} disabled={computedAge !== null} />
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="e.g. 12"
+                            min={0}
+                            max={80}
+                            {...field}
+                            onChange={(e) => field.onChange(e.target.value === "" ? "" : Number(e.target.value))}
+                            onKeyDown={(e) => { if (["e", "E", "+", "-", "."].includes(e.key)) e.preventDefault(); }}
+                            disabled={computedAge !== null}
+                          />
                         </FormControl>
                         {computedAge !== null && (
                           <p className="text-xs text-muted-foreground"><T>Auto-calculated from DOB</T></p>
