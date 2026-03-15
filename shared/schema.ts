@@ -227,7 +227,7 @@ export const referrals = pgTable("referrals", {
   referralTriggered: boolean("referral_triggered").default(false), // auto vs manual
   referralType: text("referral_type", { enum: ["PHC", "NRC", "DEIC", "RBSK", "AWW_Intervention", "Parent_Intervention"] }).notNull(),
   referralReason: text("referral_reason", { enum: ["GDD", "Autism", "ADHD", "Behaviour", "Environment", "Domain_Delay", "Nutrition"] }).notNull(),
-  referralStatus: text("referral_status", { enum: ["Pending", "Under_Treatment", "Completed"] }).default("Pending"),
+  referralStatus: text("referral_status", { enum: ["Pending", "Under_Treatment", "Under_Evaluation", "Completed"] }).default("Pending"),
   referredByUserId: integer("referred_by_user_id").references(() => users.id),
   referredAt: timestamp("referred_at").defaultNow(),
   completedAt: timestamp("completed_at"),

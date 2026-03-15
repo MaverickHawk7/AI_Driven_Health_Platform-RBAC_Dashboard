@@ -567,6 +567,43 @@ function combineIndicators(
     .sort((a, b) => b.confidence - a.confidence);
 }
 
+// Helper: race a promise against a timeout
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+// Single AI call: Ollama → OpenRouter, with overall timeout
+async function callAI(systemPrompt: string, userMessage: string, timeoutMs: number): Promise<{ content: string; model: string } | null> {
+  try {
+    return await withTimeout(
+      (async () => {
+        // Try Ollama first
+        try {
+          const ollamaReady = await isOllamaAvailable();
+          if (ollamaReady) {
+            console.log("[riskAnalyzer] Ollama available — using local LLM");
+            return await callOllamaLLM(systemPrompt, userMessage);
+          }
+        } catch (e) {
+          console.warn("[riskAnalyzer] Ollama failed:", e);
+        }
+        // Fallback to OpenRouter
+        return await callLLM(systemPrompt, userMessage);
+      })(),
+      timeoutMs,
+      "AI call"
+    );
+  } catch (err) {
+    console.warn("[riskAnalyzer] AI call failed:", err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 export async function analyzeScreening(
   answers: ScreeningAnswers
 ): Promise<RiskResult> {
@@ -580,73 +617,39 @@ export async function analyzeScreening(
   const userMessage = buildUserMessage(questions, answers);
 
   let result: RiskResult;
-
-  // 1. Try Ollama (local LLM) first
   let aiAvailable = false;
-  try {
-    const ollamaReady = await isOllamaAvailable();
-    if (ollamaReady) {
-      console.log("[riskAnalyzer] Ollama available — using local LLM for analysis");
-      const { content, model } = await callOllamaLLM(SYSTEM_PROMPT, userMessage);
-      result = parseRiskResult(content);
-      aiAvailable = true;
-      console.log(`[riskAnalyzer] AI result via ${model}: score=${result.riskScore} level=${result.riskLevel}`);
-    } else {
-      console.log("[riskAnalyzer] Ollama not available, trying OpenRouter...");
-    }
-  } catch (ollamaErr) {
-    console.warn("[riskAnalyzer] Ollama call failed, falling back to OpenRouter:", ollamaErr);
-  }
 
-  // 2. Fallback to OpenRouter
-  if (!aiAvailable) {
+  // 1. Try AI with 20s timeout
+  const aiResult = await callAI(SYSTEM_PROMPT, userMessage, 20_000);
+  if (aiResult) {
     try {
-      const { content, model } = await callLLM(SYSTEM_PROMPT, userMessage);
-      result = parseRiskResult(content);
+      result = parseRiskResult(aiResult.content);
       aiAvailable = true;
-      console.log(`[riskAnalyzer] AI result via ${model}: score=${result.riskScore} level=${result.riskLevel}`);
-    } catch (openRouterErr) {
-      console.warn("[riskAnalyzer] OpenRouter call failed, using rule-based fallback:", openRouterErr);
+      console.log(`[riskAnalyzer] AI result via ${aiResult.model}: score=${result.riskScore} level=${result.riskLevel}`);
+    } catch (parseErr) {
+      console.warn("[riskAnalyzer] AI response parse failed:", parseErr);
     }
   }
 
-  // 3. Deterministic rule-based fallback
+  // 2. Deterministic rule-based fallback
   if (!aiAvailable) {
     result = isNewFormat
       ? mchatFallbackRisk(questions, answers)
       : legacyFallbackRisk(LEGACY_QUESTIONS, answers);
   }
 
-  // 4. Pattern detection (only for M-CHAT-R/F format)
+  // 3. Pattern detection (only for M-CHAT-R/F format)
   if (isNewFormat) {
     const ruleBasedIndicators = ruleBasedPatternDetection(questions, answers);
     console.log(`[riskAnalyzer] Rule-based pattern detection found ${ruleBasedIndicators.length} indicators`);
 
-    // Second AI pass for condition analysis
+    // Second AI pass for condition analysis (shorter timeout — non-critical)
     let aiConditions: AICondition[] = [];
     if (aiAvailable) {
-      try {
-        const conditionMessage = buildUserMessage(questions, answers);
-        let conditionContent: string | undefined;
-
-        // Try Ollama first, then OpenRouter
-        try {
-          const ollamaReady = await isOllamaAvailable();
-          if (ollamaReady) {
-            const { content } = await callOllamaLLM(CONDITION_PROMPT, conditionMessage);
-            conditionContent = content;
-          }
-        } catch { /* fall through */ }
-
-        if (!conditionContent) {
-          const { content } = await callLLM(CONDITION_PROMPT, conditionMessage);
-          conditionContent = content;
-        }
-
-        aiConditions = parseConditionResult(conditionContent);
+      const conditionResult = await callAI(CONDITION_PROMPT, userMessage, 15_000);
+      if (conditionResult) {
+        aiConditions = parseConditionResult(conditionResult.content);
         console.log(`[riskAnalyzer] AI condition analysis found ${aiConditions.length} conditions`);
-      } catch (err) {
-        console.warn("[riskAnalyzer] AI condition analysis failed, using rule-based only:", err);
       }
     }
 

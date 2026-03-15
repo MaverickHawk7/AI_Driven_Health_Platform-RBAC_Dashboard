@@ -369,6 +369,7 @@ const te: Record<string, string> = {
   "All Statuses": "అన్ని స్థితులు",
   "Pending": "పెండింగ్",
   "Under Treatment": "చికిత్సలో",
+  "Under Evaluation": "మూల్యాంకనంలో",
   "Completed": "పూర్తయింది",
   "All Types": "అన్ని రకాలు",
   "PHC": "PHC",
@@ -597,6 +598,46 @@ const te: Record<string, string> = {
 
   // Sidebar additions
   "HealthTrack": "హెల్త్‌ట్రాక్",
+
+  // Higher Official Dashboard
+  "Total Children (State)": "మొత్తం పిల్లలు (రాష్ట్రం)",
+  "System-wide": "వ్యవస్థ-వ్యాప్తంగా",
+  "Avg Risk Reduction": "సగటు రిస్క్ తగ్గింపు",
+  "AI Model Performance": "AI మోడల్ పనితీరు",
+  "Proxy metrics for AI model reliability and usage patterns.":
+    "AI మోడల్ విశ్వసనీయత మరియు వాడకం నమూనాల ప్రాక్సీ కొలమానాలు.",
+  "AI Usage Rate": "AI వాడకం రేటు",
+  "% using LLM analysis": "% LLM విశ్లేషణ ఉపయోగిస్తోంది",
+  "Fallback Rate": "ఫాల్‌బ్యాక్ రేటు",
+  "% using rule-based fallback": "% నియమ-ఆధారిత ఫాల్‌బ్యాక్ ఉపయోగిస్తోంది",
+  "AI-Fallback Consistency": "AI-ఫాల్‌బ్యాక్ స్థిరత్వం",
+  "Score agreement within ±15pts": "±15 పాయింట్ల లోపు స్కోర్ ఏకీకరణ",
+  "Total Screenings": "మొత్తం స్క్రీనింగ్‌లు",
+  "Screenings analyzed": "విశ్లేషించిన స్క్రీనింగ్‌లు",
+  "Policy Impact — District Comparison": "విధాన ప్రభావం — జిల్లా పోలిక",
+  "Compare screening coverage, high-risk rate, and intervention completion across districts.":
+    "జిల్లాలలో స్క్రీనింగ్ కవరేజ్, అధిక-రిస్క్ రేటు మరియు జోక్యం పూర్తిని పోల్చండి.",
+  "High Risk %": "అధిక రిస్క్ %",
+  "Recovery %": "రికవరీ %",
+  "Intervention %": "జోక్యం %",
+  "Resource Allocation vs Outcomes": "వనరుల కేటాయింపు vs ఫలితాలు",
+  "Each dot is a district. X-axis = active field workers (resource proxy). Y-axis = recovery rate (outcome).":
+    "ప్రతి చుక్క ఒక జిల్లా. X-అక్షం = క్రియాశీల ఫీల్డ్ వర్కర్లు. Y-అక్షం = రికవరీ రేటు.",
+  "Active Field Workers": "క్రియాశీల ఫీల్డ్ వర్కర్లు",
+  "Recovery Rate %": "రికవరీ రేటు %",
+  "Total Patients": "మొత్తం పేషెంట్‌లు",
+  "State-Wide Risk Distribution": "రాష్ట్ర-వ్యాప్త రిస్క్ పంపిణీ",
+  "No screening data available.": "స్క్రీనింగ్ డేటా అందుబాటులో లేదు.",
+  "Avg Interaction": "సగటు పరస్పర చర్య",
+  "Avg Delay Reduction": "సగటు ఆలస్యం తగ్గింపు",
+  "Total": "మొత్తం",
+  "Center": "కేంద్రం",
+  "Stunting": "ఎదుగుదల లోపం",
+  "Anemia": "రక్తహీనత",
+
+  // Referral actions (non-diagnostic platform)
+  "Refer for Evaluation": "మూల్యాంకనం కోసం రిఫర్ చేయండి",
+  "Mark Referred": "రిఫర్ చేయబడింది గుర్తించండి",
 };
 
 export function t(text: string, lang: Language): string {

@@ -12,7 +12,7 @@ import { ArrowRight } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: "bg-amber-100 text-amber-700",
-  Under_Treatment: "bg-blue-100 text-blue-700",
+  Under_Evaluation: "bg-blue-100 text-blue-700",
   Completed: "bg-green-100 text-green-700",
 };
 
@@ -62,7 +62,7 @@ export default function ReferralManagement() {
           <SelectContent>
             <SelectItem value="all"><T>All Statuses</T></SelectItem>
             <SelectItem value="Pending"><T>Pending</T></SelectItem>
-            <SelectItem value="Under_Treatment"><T>Under Treatment</T></SelectItem>
+            <SelectItem value="Under_Evaluation"><T>Under Evaluation</T></SelectItem>
             <SelectItem value="Completed"><T>Completed</T></SelectItem>
           </SelectContent>
         </Select>
@@ -90,7 +90,7 @@ export default function ReferralManagement() {
         <div className="space-y-3">
           {filtered.map((ref: any) => (
             <Card key={ref.id} className="overflow-hidden">
-              <div className={`h-1 w-full ${ref.referralStatus === "Completed" ? "bg-green-500" : ref.referralStatus === "Under_Treatment" ? "bg-blue-500" : "bg-amber-500"}`} />
+              <div className={`h-1 w-full ${ref.referralStatus === "Completed" ? "bg-green-500" : (ref.referralStatus === "Under_Treatment" || ref.referralStatus === "Under_Evaluation") ? "bg-blue-500" : "bg-amber-500"}`} />
               <CardContent className="pt-4 pb-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
@@ -110,11 +110,11 @@ export default function ReferralManagement() {
                       View Patient <ArrowRight className="w-3 h-3 ml-1" />
                     </Button>
                     {canModify && ref.referralStatus === "Pending" && (
-                      <Button size="sm" variant="outline" onClick={() => updateReferral({ id: ref.id, referralStatus: "Under_Treatment" })}>
-                        <T>Start Treatment</T>
+                      <Button size="sm" variant="outline" onClick={() => updateReferral({ id: ref.id, referralStatus: "Under_Evaluation" })}>
+                        <T>Refer for Evaluation</T>
                       </Button>
                     )}
-                    {canModify && ref.referralStatus === "Under_Treatment" && (
+                    {canModify && (ref.referralStatus === "Under_Treatment" || ref.referralStatus === "Under_Evaluation") && (
                       <Button size="sm" onClick={() => updateReferral({ id: ref.id, referralStatus: "Completed" })}>
                         <T>Mark Complete</T>
                       </Button>
